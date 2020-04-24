@@ -193,16 +193,16 @@ def check_feasibility(individual):
         # print(aux_df.index)
         # print(incomp_df)
         for ind in list(aux_df.index):
-            # print(ind)
+            print(ind)
             list_aux = list(aux_df.index)
             list_aux.remove(ind)
-            # print(list_aux)
-            while feasibility:
-                for ind_aux in list_aux:
-                    # print(ind_aux)
-                    # Buscamos en la matriz de incompatibilidades, para ver si dichos grupos se pueden solapar
-                    if incomp_df[ind_aux][ind] == 1:
-                        feasibility = False
+            print(list_aux)
+            for ind_aux in list_aux:
+                print(ind_aux)
+                # Buscamos en la matriz de incompatibilidades, para ver si dichos grupos se pueden solapar
+                if incomp_df[ind_aux][ind] == 1:
+                    feasibility = False
+                    return feasibility
 
     return feasibility
 
@@ -250,7 +250,7 @@ toolbox.register("mutate", tools.mutFlipBit, indpb=0.05)
 toolbox.register("select", tools.selTournament, tournsize=3)
 
 # Creamos la población
-pop = toolbox.population(n=5)
+pop = toolbox.population(n=500)
 hof = tools.HallOfFame(1, similar=np.array_equal)
 fitnesses = list(map(toolbox.evaluate, pop))
 for ind, fit in zip(pop, fitnesses):
@@ -267,7 +267,7 @@ fits = [ind.fitness.values[0] for ind in pop]
 # g=variable que cuenta el número de iteraciones realizadas
 g = 0
 # Comienza la evolución
-while min(fits) > 0 and g < 1000:
+while min(fits) > 0 and g < 100:
     # A new generation
     g = g + 1
     print("-- Generation %i --" % g)
