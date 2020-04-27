@@ -3,7 +3,7 @@ import xlrd
 import numpy as np
 import pandas as pd
 from deap import algorithms, base, creator, tools
-
+import multiprocessing
 
 ################################################################################
 #FUNCIÓN DE EVALUACIÓN
@@ -193,12 +193,12 @@ def check_feasibility(individual):
         # print(aux_df.index)
         # print(incomp_df)
         for ind in list(aux_df.index):
-            print(ind)
+            #print(ind)
             list_aux = list(aux_df.index)
             list_aux.remove(ind)
-            print(list_aux)
+            #print(list_aux)
             for ind_aux in list_aux:
-                print(ind_aux)
+                #print(ind_aux)
                 # Buscamos en la matriz de incompatibilidades, para ver si dichos grupos se pueden solapar
                 if incomp_df[ind_aux][ind] == 1:
                     feasibility = False
@@ -206,122 +206,132 @@ def check_feasibility(individual):
 
     return feasibility
 
-
-
-################################################################################
-#ALGORITMO GENÉTICO
-
-#Consideramos la función de fitness como FitnessMin y creamos los individuales como listas
-creator.create("FitnessMin", base.Fitness, weights=(-1.0,))
-creator.create("Individual", list, fitness=creator.FitnessMin)
-
-
+#################################################################################
+#VARIABLES GLOBALES
 #Ejemplo cuatrimestre , 1º curso
 tam=len(dict_asignaturas[1, "Primer cuatrimestre", "ES"])
 asignaturas=dict_asignaturas[1, "Primer cuatrimestre", "ES"]
 bloques=['Lunes1', "Lunes2", "Lunes3", "Lunes4", "Martes1", "Martes2", "Martes3", "Martes4",
-                                 "Miércoles1", "Miércoles2", "Miércoles3", "Miércoles4", "Jueves1", "Jueves2", "Jueves3",
-                                   "Jueves4", "Viernes1", "Viernes2", "Viernes3", "Viernes4"]
-#Existen 21 grupos en el primer curso del primer cuatrimestre, en español.
+         "Miércoles1", "Miércoles2", "Miércoles3", "Miércoles4", "Jueves1", "Jueves2", "Jueves3",
+         "Jueves4", "Viernes1", "Viernes2", "Viernes3", "Viernes4"]
 
-#De esta forma, creamos los individuos, estarán formados
-# por 1 o 0, en función de si se imparte clase durante ese bloque o no.
-#El tamaño del vector será de 21grupos *5 días*4 bloques/día.
-#Sería una matriz de 21x20
-IND_SIZE=tam*20
+################################################################################
+#ALGORITMO GENÉTICO
 
-#Ahora, necesitamos un toolbox.
-#Se generarán de forma aleatoria las posibles individuos que tendrán
-#un total de 21x20 elementos y estarán formados por enteros 0 o 1.
-toolbox = base.Toolbox()
+def main():
 
-toolbox.register("attr_bool", random.randint, 0, 1)
-toolbox.register("individual", tools.initRepeat, creator.Individual,
-                 toolbox.attr_bool, n=IND_SIZE)
-toolbox.register("population", tools.initRepeat, list, toolbox.individual)
+    if __name__ == "__main__":
+        #Consideramos la función de fitness como FitnessMin y creamos los individuales como listas
+        creator.create("FitnessMin", base.Fitness, weights=(-1.0,))
+        creator.create("Individual", list, fitness=creator.FitnessMin)
 
 
-#Utilizamos la función evaluator que creamos como función de evaluación
-toolbox.register("evaluate", evaluator)
-#Añadimos la función para penalizar en caso de no cumplir las restricciones
-toolbox.decorate("evaluate", tools.DeltaPenalty(check_feasibility, 20000))
-toolbox.register("mate", tools.cxTwoPoint)
-toolbox.register("mutate", tools.mutFlipBit, indpb=0.05)
-toolbox.register("select", tools.selTournament, tournsize=3)
 
-# Creamos la población
-pop = toolbox.population(n=500)
-hof = tools.HallOfFame(1, similar=np.array_equal)
-fitnesses = list(map(toolbox.evaluate, pop))
-for ind, fit in zip(pop, fitnesses):
-    ind.fitness.values = fit
-    # print("FIT: ", fit)
+        #Existen 21 grupos en el primer curso del primer cuatrimestre, en español.
 
-# CXPB = probabilidad con las que dos invidividuos se cruzan
-# MUTPB = probabilidad de mutar un individuo
-CXPB, MUTPB = 0.5, 0.2
+        #De esta forma, creamos los individuos, estarán formados
+        # por 1 o 0, en función de si se imparte clase durante ese bloque o no.
+        #El tamaño del vector será de 21grupos *5 días*4 bloques/día.
+        #Sería una matriz de 21x20
+        IND_SIZE=tam*20
 
-# Se almacenan en fits los valores de fitness de los individuos
-fits = [ind.fitness.values[0] for ind in pop]
+        #Ahora, necesitamos un toolbox.
+        #Se generarán de forma aleatoria las posibles individuos que tendrán
+        #un total de 21x20 elementos y estarán formados por enteros 0 o 1.
+        toolbox = base.Toolbox()
 
-# g=variable que cuenta el número de iteraciones realizadas
-g = 0
-# Comienza la evolución
-while min(fits) > 0 and g < 100:
-    # A new generation
-    g = g + 1
-    print("-- Generation %i --" % g)
-    # Seleccionamos la población
-    offspring = toolbox.select(pop, len(pop))
-    # Se clonan los individuos
-    offspring = list(map(toolbox.clone, offspring))
-    # Se aplican crossover y mutación
-    for child1, child2 in zip(offspring[::2], offspring[1::2]):
-        if random.random() < CXPB:
-            toolbox.mate(child1, child2)
-            del child1.fitness.values
-            del child2.fitness.values
+        toolbox.register("attr_bool", random.randint, 0, 1)
+        toolbox.register("individual", tools.initRepeat, creator.Individual,
+                     toolbox.attr_bool, n=IND_SIZE)
+        toolbox.register("population", tools.initRepeat, list, toolbox.individual)
 
-    for mutant in offspring:
-        if random.random() < MUTPB:
-            toolbox.mutate(mutant)
-            del mutant.fitness.values
+        #Para varios procesadores
+        pool=multiprocessing.Pool(processes=3)
+        toolbox.register("map", pool.map)
+        #Utilizamos la función evaluator que creamos como función de evaluación
+        toolbox.register("evaluate", evaluator)
+        #Añadimos la función para penalizar en caso de no cumplir las restricciones
+        toolbox.decorate("evaluate", tools.DeltaPenalty(check_feasibility, 20000))
+        toolbox.register("mate", tools.cxTwoPoint)
+        toolbox.register("mutate", tools.mutFlipBit, indpb=0.05)
+        toolbox.register("select", tools.selTournament, tournsize=3)
 
-    # Se evalúa el fitness de los nuevos individuos
-    # Se reevalúan aquellos casos donde se consideró inválido el valor de fitness
-    invalid_ind = [ind for ind in offspring if not ind.fitness.valid]
-    fitnesses = map(toolbox.evaluate, invalid_ind)
-    for ind, fit in zip(invalid_ind, fitnesses):
-        ind.fitness.values = fit
+        # Creamos la población
+        pop = toolbox.population(n=10000)
+        hof = tools.HallOfFame(1, similar=np.array_equal)
+        fitnesses = list(map(toolbox.evaluate, pop))
+        for ind, fit in zip(pop, fitnesses):
+            ind.fitness.values = fit
+            # print("FIT: ", fit)
 
-    # Se reemplaza la población por la nueva generada
-    # después del crossover y la mutación
-    pop[:] = offspring
+        # CXPB = probabilidad con las que dos invidividuos se cruzan
+        # MUTPB = probabilidad de mutar un individuo
+        CXPB, MUTPB = 0.5, 0.2
 
-    #Se hace un update del HallOfFame donde se almacenará la mejor solución
-    hof.update(pop)
-    # Se evalúa la solución
-    fits = [ind.fitness.values[0] for ind in pop]
+        # Se almacenan en fits los valores de fitness de los individuos
+        fits = [ind.fitness.values[0] for ind in pop]
 
-    # length = len(pop)
-    # mean = sum(fits) / length
-    # sum2 = sum(x * x for x in fits)
-    # std = abs(sum2 / length - mean ** 2) ** 0.5
+        # g=variable que cuenta el número de iteraciones realizadas
+        g = 0
+        # Comienza la evolución
+        while min(fits) > 0 and g < 500:
+            # A new generation
+            g = g + 1
+            print("-- Generation %i --" % g)
+            # Seleccionamos la población
+            offspring = toolbox.select(pop, len(pop))
+            # Se clonan los individuos
+            offspring = list(map(toolbox.clone, offspring))
+            # Se aplican crossover y mutación
+            for child1, child2 in zip(offspring[::2], offspring[1::2]):
+                if random.random() < CXPB:
+                    toolbox.mate(child1, child2)
+                    del child1.fitness.values
+                    del child2.fitness.values
 
-    print("  Min %s" % min(fits))
-    # print("  Max %s" % max(fits))
-    # print("  Avg %s" % mean)
-    # print("  Std %s" % std)
+            for mutant in offspring:
+                if random.random() < MUTPB:
+                    toolbox.mutate(mutant)
+                    del mutant.fitness.values
+
+            # Se evalúa el fitness de los nuevos individuos
+            # Se reevalúan aquellos casos donde se consideró inválido el valor de fitness
+            invalid_ind = [ind for ind in offspring if not ind.fitness.valid]
+            fitnesses = map(toolbox.evaluate, invalid_ind)
+            for ind, fit in zip(invalid_ind, fitnesses):
+                ind.fitness.values = fit
+
+            # Se reemplaza la población por la nueva generada
+            # después del crossover y la mutación
+            pop[:] = offspring
+
+            #Se hace un update del HallOfFame donde se almacenará la mejor solución
+            hof.update(pop)
+            # Se evalúa la solución
+            fits = [ind.fitness.values[0] for ind in pop]
+
+            # length = len(pop)
+            # mean = sum(fits) / length
+            # sum2 = sum(x * x for x in fits)
+            # std = abs(sum2 / length - mean ** 2) ** 0.5
+
+            print("  Min %s" % min(fits))
+            # print("  Max %s" % max(fits))
+            # print("  Avg %s" % mean)
+            # print("  Std %s" % std)
 
 
-if list(hof[0])!=None:
-    # Almacenamos la mejor solución en un excel para realizar comprobaciones
-    print(list(hof[0]))
-    df = pd.DataFrame(data=np.reshape(list(hof[0]), (tam, 20)),
-                  columns=bloques, index=asignaturas)
-    out_file = "solucion.xlsx"
-    df.to_excel(out_file, index=False)
+        if list(hof[0])!=None:
+            # Almacenamos la mejor solución en un excel para realizar comprobaciones
+            print(list(hof[0]))
+            df = pd.DataFrame(data=np.reshape(list(hof[0]), (tam, 20)),
+                              columns=bloques, index=asignaturas)
+            out_file = "solucion.xlsx"
+            df.to_excel(out_file, index=False)
 
+        return hof
+
+main()
 # comp=True
 # for col in df:
 #     #print(col)
