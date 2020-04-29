@@ -25,16 +25,22 @@ def evaluator(individual):
     #Sabemos que cada día tiene 4 bloques posibles, luego para saber las horas por cada día serían los
     #bloques 0-3 para el lunes, 4-7 para el martes, 8-11 para el miércoles, etc.
     while j < l:
-        for i in range(j, j+4):
-            sum_monday=sum_monday+individual[i]
-        for i in range(j+4, j+8):
-            sum_tuesday=sum_tuesday+individual[i]
-        for i in range(j + 8, j + 12):
-            sum_wednesday = sum_wednesday + individual[i]
-        for i in range(j + 12, j + 16):
-            sum_thursday = sum_thursday + individual[i]
-        for i in range(j + 16, j + 20):
-            sum_friday = sum_friday + individual[i]
+        #for i in range(j, j+4):
+        #    sum_monday=sum_monday+individual[i]
+        sum_monday+=sum(individual[j:j+4])
+
+        #for i in range(j+4, j+8):
+         #   sum_tuesday=sum_tuesday+individual[i]
+        sum_tuesday += sum(individual[j+4:j + 8])
+        #for i in range(j + 8, j + 12):
+         #   sum_wednesday = sum_wednesday + individual[i]
+        sum_wednesday += sum(individual[j + 8:j + 12])
+        #for i in range(j + 12, j + 16):
+            #sum_thursday = sum_thursday + individual[i]
+        sum_thursday +=sum(individual[j + 12:j + 16])
+        #for i in range(j + 16, j + 20):
+            #sum_friday = sum_friday + individual[i]
+        sum_friday +=sum(individual[j + 16:j + 20])
         j+=20
     #print("Monday: ", sum_monday)
     #print("Tuesday: ", sum_tuesday)
@@ -45,6 +51,8 @@ def evaluator(individual):
     minimo=min([sum_monday, sum_tuesday, sum_wednesday, sum_thursday, sum_friday])
     maximo = max([sum_monday, sum_tuesday, sum_wednesday, sum_thursday, sum_friday])
     result=abs(maximo-minimo)
+    if not check_feasibility(individual):
+        result+=2000
     #print("Result: ", result)
     return (result, )
 
@@ -64,7 +72,7 @@ dict_asignaturas={}
 vector_es=[]
 vector_eu=[]
 vector_en=[]
-
+dict_horassemanales={}
 curso_aux=int(1)
 cuatri_aux="Primer cuatrimestre"
 for row in range(2,sheet.nrows):
@@ -78,28 +86,34 @@ for row in range(2,sheet.nrows):
             for i in range(1, int(sheet.cell(row, 5).value)+1):
                 codigo=str(int(sheet.cell(row,0).value))+"-M"+str(i).zfill(2)+"ES"
                 vector_es.append(codigo)
+                dict_horassemanales[codigo]=int(sheet.cell(row,14).value)
         if int(sheet.cell(row, 6).value)>0:
             for i in range(1, int(sheet.cell(row, 6).value)+1):
                 codigo=str(int(sheet.cell(row,0).value))+"-GL"+str(i).zfill(2)+"ES"
                 vector_es.append(codigo)
+                dict_horassemanales[codigo] = int(sheet.cell(row, 15).value)
         # Columna 7: idioma EU y magistral. Columna 8: idioma EU y laboratorio.
         if int(sheet.cell(row, 7).value) > 0:
             for i in range(1, int(sheet.cell(row, 7).value) + 1):
                 codigo = str(int(sheet.cell(row, 0).value)) + "-M" + str(i).zfill(2) + "EU"
                 vector_eu.append(codigo)
+                dict_horassemanales[codigo] = int(sheet.cell(row, 14).value)
         if int(sheet.cell(row, 8).value) > 0:
             for i in range(1, int(sheet.cell(row, 8).value) + 1):
                 codigo = str(int(sheet.cell(row, 0).value)) + "-GL" + str(i).zfill(2) + "EU"
                 vector_eu.append(codigo)
+                dict_horassemanales[codigo] = int(sheet.cell(row, 15).value)
         # Columna 9: idioma EN y magistral. Columna 10: idioma EN y laboratorio.
         if int(sheet.cell(row, 9).value) > 0:
             for i in range(1, int(sheet.cell(row, 9).value) + 1):
                 codigo = str(int(sheet.cell(row, 0).value)) + "-M" + str(i).zfill(2) + "EN"
                 vector_en.append(codigo)
+                dict_horassemanales[codigo] = int(sheet.cell(row, 14).value)
         if int(sheet.cell(row, 10).value) > 0:
             for i in range(1, int(sheet.cell(row, 10).value) + 1):
                 codigo = str(int(sheet.cell(row, 0).value)) + "-GL" + str(i).zfill(2) + "EN"
                 vector_en.append(codigo)
+                dict_horassemanales[codigo] = int(sheet.cell(row, 15).value)
     else:
         #Cuando deja de coincidir, significa que estamos en una fila que tiene alguno de los parámetros diferentes.
         #Guardamos la info en el diccionario correspondiente, vaciamos los vectores y metemos
@@ -117,29 +131,36 @@ for row in range(2,sheet.nrows):
             for i in range(1, int(sheet.cell(row, 5).value)+1):
                 codigo=str(int(sheet.cell(row,0).value))+"-M"+str(i).zfill(2)+"ES"
                 vector_es.append(codigo)
+                dict_horassemanales[codigo] = int(sheet.cell(row, 14).value)
         if int(sheet.cell(row, 6).value)>0:
             for i in range(1, int(sheet.cell(row, 6).value)+1):
                 codigo=str(int(sheet.cell(row,0).value))+"-GL"+str(i).zfill(2)+"ES"
                 vector_es.append(codigo)
+                dict_horassemanales[codigo] = int(sheet.cell(row, 15).value)
         if int(sheet.cell(row, 7).value) > 0:
             for i in range(1, int(sheet.cell(row, 7).value) + 1):
                 codigo = str(int(sheet.cell(row, 0).value)) + "-M" + str(i).zfill(2) + "EU"
                 vector_eu.append(codigo)
+                dict_horassemanales[codigo] = int(sheet.cell(row, 14).value)
         if int(sheet.cell(row, 8).value) > 0:
             for i in range(1, int(sheet.cell(row, 8).value) + 1):
                 codigo = str(int(sheet.cell(row, 0).value)) + "-GL" + str(i).zfill(2) + "EU"
                 vector_eu.append(codigo)
+                dict_horassemanales[codigo] = int(sheet.cell(row, 15).value)
         if int(sheet.cell(row, 9).value) > 0:
             for i in range(1, int(sheet.cell(row, 9).value) + 1):
                 codigo = str(int(sheet.cell(row, 0).value)) + "-M" + str(i).zfill(2) + "EN"
                 vector_en.append(codigo)
+                dict_horassemanales[codigo] = int(sheet.cell(row, 14).value)
         if int(sheet.cell(row, 10).value) > 0:
             for i in range(1, int(sheet.cell(row, 10).value) + 1):
                 codigo = str(int(sheet.cell(row, 0).value)) + "-GL" + str(i).zfill(2) + "EN"
                 vector_en.append(codigo)
+                dict_horassemanales[codigo] = int(sheet.cell(row, 15).value)
 
 #print(dict_asignaturas)
-
+#print(dict_horassemanales)
+#print(len(dict_horassemanales))
 ###################################################################################
 #MATRIZ DE INCOMPATIBILIDADES
 #Creamos la matriz de incompatibilidades
@@ -170,8 +191,6 @@ for col in incomp_df:
 laboratorios_df=pd.read_excel(file, sheet_name="Laboratorios", header=0, index_col=False)
 #print(laboratorios_df)
 
-##################################################################################
-#HORAS SEMANALES POR GRUPOS
 
 ##################################################################################
 #FUNCIÓN DE COMPROBACIÓN DE RESTRICCIONES
@@ -183,6 +202,14 @@ def check_feasibility(individual):
     ind_df = pd.DataFrame(np.reshape(individual, (tam, 20)), index=asignaturas, columns=bloques)
     feasibility = True
 
+    for ind_row, row in ind_df.iterrows():
+        s = sum(row)
+        #print(s)
+        #print(dict_horassemanales[ind_row])
+        if s != dict_horassemanales[ind_row]:
+            feasibility = False
+            #print("False")
+            return feasibility
     for col in ind_df:
         # print(col)
         # aux_df=incomp_df.loc[:, col]
@@ -225,8 +252,6 @@ def main():
         creator.create("FitnessMin", base.Fitness, weights=(-1.0,))
         creator.create("Individual", list, fitness=creator.FitnessMin)
 
-
-
         #Existen 21 grupos en el primer curso del primer cuatrimestre, en español.
 
         #De esta forma, creamos los individuos, estarán formados
@@ -251,13 +276,13 @@ def main():
         #Utilizamos la función evaluator que creamos como función de evaluación
         toolbox.register("evaluate", evaluator)
         #Añadimos la función para penalizar en caso de no cumplir las restricciones
-        toolbox.decorate("evaluate", tools.DeltaPenalty(check_feasibility, 20000))
+        #toolbox.decorate("evaluate", tools.DeltaPenalty(check_feasibility, 20000))
         toolbox.register("mate", tools.cxTwoPoint)
         toolbox.register("mutate", tools.mutFlipBit, indpb=0.05)
         toolbox.register("select", tools.selTournament, tournsize=3)
 
         # Creamos la población
-        pop = toolbox.population(n=10000)
+        pop = toolbox.population(n=4000)
         hof = tools.HallOfFame(1, similar=np.array_equal)
         fitnesses = list(map(toolbox.evaluate, pop))
         for ind, fit in zip(pop, fitnesses):
@@ -331,7 +356,13 @@ def main():
 
         return hof
 
+
+#Ejecutamos el algoritmo genético
 main()
+
+
+
+
 # comp=True
 # for col in df:
 #     #print(col)
