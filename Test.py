@@ -5,6 +5,7 @@ import pandas as pd
 from deap import algorithms, base, creator, tools
 import multiprocessing
 
+
 ################################################################################
 #FUNCIÓN DE EVALUACIÓN
 def evaluator(individual):
@@ -28,7 +29,6 @@ def evaluator(individual):
         #for i in range(j, j+4):
         #    sum_monday=sum_monday+individual[i]
         sum_monday+=sum(individual[j:j+4])
-
         #for i in range(j+4, j+8):
          #   sum_tuesday=sum_tuesday+individual[i]
         sum_tuesday += sum(individual[j+4:j + 8])
@@ -51,8 +51,9 @@ def evaluator(individual):
     minimo=min([sum_monday, sum_tuesday, sum_wednesday, sum_thursday, sum_friday])
     maximo = max([sum_monday, sum_tuesday, sum_wednesday, sum_thursday, sum_friday])
     result=abs(maximo-minimo)
-    if not check_feasibility(individual):
-        result+=2000
+    #if not check_feasibility(individual):
+    #    result+=2000
+    result =result+ 10*check_feasibility(individual)
     #print("Result: ", result)
     return (result, )
 
@@ -172,7 +173,7 @@ incomp_df=pd.DataFrame(matrix, index=dict_asignaturas[1, "Primer cuatrimestre", 
 
 #Creamos un dataframe para tener en indice_fila y col los códigos únicos de cada asignatura.
 #Primero lo creamos con 1.0 y después, lo cambiamos por un 0 en los casos en los que
-#se trate de dos grupos de laboratorio de diferente asignatura:
+#se trate de dos grupos de laboratorio de diferente asignatura. Un 0 indica que son compatibles:
 for col in incomp_df:
     #print(col)
     if "GL" in col:
@@ -184,7 +185,8 @@ for col in incomp_df:
 
 
 #print(incomp_df)
-
+#print(dict_horassemanales)
+#print(dict_asignaturas[1, "Primer cuatrimestre", "ES"])
 ################################################################################
 #INFORMACIÓN SOBRE LABORATORIOS
 #Leemos la información de la hoja Laboratorios
@@ -200,38 +202,59 @@ def check_feasibility(individual):
 
     #Restricción sobre los solapamientos de las asignaturas
     ind_df = pd.DataFrame(np.reshape(individual, (tam, 20)), index=asignaturas, columns=bloques)
-    feasibility = True
+    matrix=np.reshape(individual, (tam, 20))
+    #penalty=penalty + abs(sum(row)
+           # - dict_horassemanales[ind_row]) if sum(row) != dict_horassemanales[ind_row] for ind_row, row in ind_df.iterrows()
+    #print("DESPUÉS DE BUCLE OPTIMIZADO: ",penalty)
 
+    penalty=0
     for ind_row, row in ind_df.iterrows():
         s = sum(row)
-        #print(s)
-        #print(dict_horassemanales[ind_row])
         if s != dict_horassemanales[ind_row]:
-            feasibility = False
-            #print("False")
-            return feasibility
-    for col in ind_df:
-        # print(col)
-        # aux_df=incomp_df.loc[:, col]
-        # Recorremos el DF por columnas y nos quedamos con aquellas filas cuyo valor es 1.
-        condicion = ind_df[col] >= 1
-        # print(df[condicion][col])
-        aux_df = ind_df[condicion][col]
-        # print(aux_df.index)
-        # print(incomp_df)
-        for ind in list(aux_df.index):
-            #print(ind)
-            list_aux = list(aux_df.index)
-            list_aux.remove(ind)
-            #print(list_aux)
-            for ind_aux in list_aux:
-                #print(ind_aux)
-                # Buscamos en la matriz de incompatibilidades, para ver si dichos grupos se pueden solapar
-                if incomp_df[ind_aux][ind] == 1:
-                    feasibility = False
-                    return feasibility
+            penalty += abs(s - dict_horassemanales[ind_row])
 
-    return feasibility
+
+    #Se multiplica la matriz del individuo por su transpuesta. De esta forma tendremos
+    #una matriz con dimensiones asignaturas x asinaturas donde cada valor refleja el
+    #número de veces que cada grupo i coincide con el grupo j
+    new_matrix = matrix.dot(np.transpose(matrix))
+    #Creamos un dataframe de dicha matriz
+    new_df=pd.DataFrame(new_matrix, index=asignaturas, columns=asignaturas)
+    #Multiplicamos ambos dataframes porque no es lo mismo multiplicar matrices que dataframes.
+    #De esta forma multiplica aquellos que tienen los mismos index. Así, tendremos una matriz
+    #resultado en new_df con valores únicamente para los grupos que son incompatibles.
+    new_df=new_df*incomp_df
+    #Obtenemos dichos valores
+    values=new_df.values
+    #Sumamos los valores de la diagonal inferior (sin contar la diagonal principal). Este será
+    #el valor de penalización que estamos buscando.
+    suma_diagonal_inf=sum(values[np.tril_indices(values.shape[0], -1)])
+    penalty+=suma_diagonal_inf
+
+    #MÉTODO LENTO
+    # for col in ind_df:
+    #     # print(col)
+    #     # aux_df=incomp_df.loc[:, col]
+    #     # Recorremos el DF por columnas y nos quedamos con aquellas filas cuyo valor es 1.
+    #     condicion = ind_df[col] >= 1
+    #     # print(df[condicion][col])
+    #     aux_df = ind_df[condicion][col]
+    #     # print(aux_df.index)
+    #     # print(incomp_df)
+    #     for ind in list(aux_df.index):
+    #         #print(ind)
+    #         list_aux = list(aux_df.index)
+    #         list_aux.remove(ind)
+    #         #print(list_aux)
+    #         for ind_aux in list_aux:
+    #             #print(ind_aux)
+    #             # Buscamos en la matriz de incompatibilidades, para ver si dichos grupos se pueden solapar
+    #             if incomp_df[ind_aux][ind] == 1:
+    #                 penalty+=1
+    #                 #feasibility = False
+    #                 #return feasibility
+
+    return penalty
 
 #################################################################################
 #VARIABLES GLOBALES
@@ -282,7 +305,7 @@ def main():
         toolbox.register("select", tools.selTournament, tournsize=3)
 
         # Creamos la población
-        pop = toolbox.population(n=4000)
+        pop = toolbox.population(n=6000)
         hof = tools.HallOfFame(1, similar=np.array_equal)
         fitnesses = list(map(toolbox.evaluate, pop))
         for ind, fit in zip(pop, fitnesses):
@@ -352,16 +375,13 @@ def main():
             df = pd.DataFrame(data=np.reshape(list(hof[0]), (tam, 20)),
                               columns=bloques, index=asignaturas)
             out_file = "solucion.xlsx"
-            df.to_excel(out_file, index=False)
+            df.to_excel(out_file, index=True)
 
         return hof
 
 
 #Ejecutamos el algoritmo genético
 main()
-
-
-
 
 # comp=True
 # for col in df:
