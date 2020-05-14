@@ -7,6 +7,26 @@ import multiprocessing
 
 
 ################################################################################
+#FUNCIÓN DE MUTACIÓN
+def mutation(population):
+    mut=0
+    return mut
+
+################################################################################
+#FUNCIÓN DE CROSSOVER
+def mate(population):
+    i=0
+    return i
+################################################################################
+#FUNCIÓN PARA RELLENAR CON CIERTA PROBABILIDAD EL INDIVIDUO
+def get_choice():
+    f=2/20
+    if random.random() <=f:
+        return 1
+    else:
+        return 0
+
+################################################################################
 #FUNCIÓN DE EVALUACIÓN
 def evaluator(individual):
     #Aquí se debe calcular la diferencia entre el día que más horas lectivas posee
@@ -230,8 +250,11 @@ def check_feasibility(individual):
     #el valor de penalización que estamos buscando.
     suma_diagonal_inf=sum(values[np.tril_indices(values.shape[0], -1)])
     penalty+=suma_diagonal_inf
+    #print("SUMA DIAGONAL: ", suma_diagonal_inf)
 
-    #MÉTODO LENTO
+    ###############
+    # #MÉTODO LENTO
+    # #penalty_lento=0
     # for col in ind_df:
     #     # print(col)
     #     # aux_df=incomp_df.loc[:, col]
@@ -251,9 +274,10 @@ def check_feasibility(individual):
     #             # Buscamos en la matriz de incompatibilidades, para ver si dichos grupos se pueden solapar
     #             if incomp_df[ind_aux][ind] == 1:
     #                 penalty+=1
+    #                 #penalty_lento+=1
     #                 #feasibility = False
     #                 #return feasibility
-
+    # #print("PENALTY LENTO: ", penalty_lento)
     return penalty
 
 #################################################################################
@@ -288,7 +312,8 @@ def main():
         #un total de 21x20 elementos y estarán formados por enteros 0 o 1.
         toolbox = base.Toolbox()
 
-        toolbox.register("attr_bool", random.randint, 0, 1)
+        #toolbox.register("attr_bool", random.randint, 0, 1)
+        toolbox.register("attr_bool", get_choice)
         toolbox.register("individual", tools.initRepeat, creator.Individual,
                      toolbox.attr_bool, n=IND_SIZE)
         toolbox.register("population", tools.initRepeat, list, toolbox.individual)
@@ -300,12 +325,12 @@ def main():
         toolbox.register("evaluate", evaluator)
         #Añadimos la función para penalizar en caso de no cumplir las restricciones
         #toolbox.decorate("evaluate", tools.DeltaPenalty(check_feasibility, 20000))
-        toolbox.register("mate", tools.cxTwoPoint)
+        toolbox.register("mate", tools.cxOnePoint)
         toolbox.register("mutate", tools.mutFlipBit, indpb=0.05)
         toolbox.register("select", tools.selTournament, tournsize=3)
 
         # Creamos la población
-        pop = toolbox.population(n=6000)
+        pop = toolbox.population(n=10000)
         hof = tools.HallOfFame(1, similar=np.array_equal)
         fitnesses = list(map(toolbox.evaluate, pop))
         for ind, fit in zip(pop, fitnesses):
@@ -322,7 +347,7 @@ def main():
         # g=variable que cuenta el número de iteraciones realizadas
         g = 0
         # Comienza la evolución
-        while min(fits) > 0 and g < 500:
+        while min(fits) > 0 and g < 100:
             # A new generation
             g = g + 1
             print("-- Generation %i --" % g)
@@ -382,6 +407,7 @@ def main():
 
 #Ejecutamos el algoritmo genético
 main()
+
 
 # comp=True
 # for col in df:
