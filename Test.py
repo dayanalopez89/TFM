@@ -4,7 +4,7 @@ import numpy as np
 import pandas as pd
 from deap import algorithms, base, creator, tools
 import multiprocessing
-
+import matplotlib.pyplot as plt
 
 ################################################################################
 #FUNCIÓN DE MUTACIÓN
@@ -14,9 +14,27 @@ def mutation(population):
 
 ################################################################################
 #FUNCIÓN DE CROSSOVER
-def mate(population):
-    i=0
-    return i
+def mate(ind1, ind2):
+    #Función de crossover en dos puntos. Funcionará igual que cxTwoPoint solo que
+    #se comprobará si los individuos creados son válidos
+    #:param ind1: Primer individuo que participa en el crossover
+    #:param ind2: Segundo individuo que participa en el  crossover.
+    #:returns: Tupla de 2 individuos
+    size = min(len(ind1), len(ind2))
+    #cxpoint1 = random.randint(1, size)
+    #cxpoint2 = random.randint(1, size - 1)
+    cxpoint1=random.randrange(0, size-20+1, 20)
+    cxpoint2 = random.randrange(19, size, 20)
+    #Comprueba si el punto 2 es mayor que el 1
+    if cxpoint2 >= cxpoint1:
+        cxpoint2 += 1
+    else:  # Intercambia uno por otro
+        cxpoint1, cxpoint2 = cxpoint2, cxpoint1
+
+    ind1[cxpoint1:cxpoint2], ind2[cxpoint1:cxpoint2] \
+        = ind2[cxpoint1:cxpoint2], ind1[cxpoint1:cxpoint2]
+
+    return ind1, ind2
 ################################################################################
 #FUNCIÓN PARA RELLENAR CON CIERTA PROBABILIDAD EL INDIVIDUO
 def get_choice():
@@ -325,7 +343,8 @@ def main():
         toolbox.register("evaluate", evaluator)
         #Añadimos la función para penalizar en caso de no cumplir las restricciones
         #toolbox.decorate("evaluate", tools.DeltaPenalty(check_feasibility, 20000))
-        toolbox.register("mate", tools.cxOnePoint)
+        #toolbox.register("mate", tools.cxOnePoint)
+        toolbox.register("mate", mate)
         toolbox.register("mutate", tools.mutFlipBit, indpb=0.05)
         toolbox.register("select", tools.selTournament, tournsize=3)
 
@@ -344,6 +363,7 @@ def main():
         # Se almacenan en fits los valores de fitness de los individuos
         fits = [ind.fitness.values[0] for ind in pop]
 
+        fbest = np.ndarray((100, 1))
         # g=variable que cuenta el número de iteraciones realizadas
         g = 0
         # Comienza la evolución
@@ -389,9 +409,24 @@ def main():
             # std = abs(sum2 / length - mean ** 2) ** 0.5
 
             print("  Min %s" % min(fits))
+            #fbest[g] = hof[0].fitness.values
             # print("  Max %s" % max(fits))
             # print("  Avg %s" % mean)
             # print("  Std %s" % std)
+
+        #x = list(range(0, 100))
+        #logbook = tools.Logbook()
+        #min_fit = logbook.select("min")
+
+        # Dibujamos
+        #plt.figure()
+
+        #plt.semilogy(x, fbest, "b-")
+        #plt.semilogy(x, min_fit, "r-")
+        #plt.xlabel("Generation")
+        #plt.ylabel("Fitness")
+        #plt.title("blue: f-best, red: min")
+        #plt.show()
 
 
         if list(hof[0])!=None:
@@ -406,7 +441,8 @@ def main():
 
 
 #Ejecutamos el algoritmo genético
-main()
+#main()
+
 
 
 # comp=True
