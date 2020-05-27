@@ -35,6 +35,7 @@ def mate(ind1, ind2):
         = ind2[cxpoint1:cxpoint2], ind1[cxpoint1:cxpoint2]
 
     return ind1, ind2
+
 ################################################################################
 #FUNCIÓN PARA RELLENAR CON CIERTA PROBABILIDAD EL INDIVIDUO
 def get_choice():
@@ -44,53 +45,44 @@ def get_choice():
     else:
         return 0
 
-################################################################################
-#FUNCIÓN DE EVALUACIÓN
-def evaluator(individual):
-    #Aquí se debe calcular la diferencia entre el día que más horas lectivas posee
-    #y el día que menos
-    l=len(individual)
-    result=0
-    j=0
-    sum_monday=0
-    sum_tuesday=0
-    sum_wednesday=0
-    sum_thursday=0
-    sum_friday=0
-    #Se recorre el vector total.
-    #individual es un vector que contiene la info de los grupo-asignatura por bloques
-    #de forma consecutiva. Es decir, de 0-19 toda la info del Grupo-Asign1, de 20-30 Grupo-Asing2, etc
-    #Además, el vector correspondiente al grupo-asign está la info de todos los bloques horarios.
-    #Sabemos que cada día tiene 4 bloques posibles, luego para saber las horas por cada día serían los
-    #bloques 0-3 para el lunes, 4-7 para el martes, 8-11 para el miércoles, etc.
-    while j < l:
-        #for i in range(j, j+4):
-        #    sum_monday=sum_monday+individual[i]
+
+def dif_curso(individual, tam_curso, inicio):
+    j = inicio
+    #print(inicio)
+    sum_monday = 0
+    sum_tuesday = 0
+    sum_wednesday = 0
+    sum_thursday = 0
+    sum_friday = 0
+    #Multiplicamos el tam del curso por 20 (bloques temporales a la semana)
+    while j < (tam_curso*20):
         sum_monday+=sum(individual[j:j+4])
-        #for i in range(j+4, j+8):
-         #   sum_tuesday=sum_tuesday+individual[i]
         sum_tuesday += sum(individual[j+4:j + 8])
-        #for i in range(j + 8, j + 12):
-         #   sum_wednesday = sum_wednesday + individual[i]
         sum_wednesday += sum(individual[j + 8:j + 12])
-        #for i in range(j + 12, j + 16):
-            #sum_thursday = sum_thursday + individual[i]
         sum_thursday +=sum(individual[j + 12:j + 16])
-        #for i in range(j + 16, j + 20):
-            #sum_friday = sum_friday + individual[i]
         sum_friday +=sum(individual[j + 16:j + 20])
         j+=20
-    #print("Monday: ", sum_monday)
-    #print("Tuesday: ", sum_tuesday)
-    #print("Wednesday: ", sum_wednesday)
-    #print("Thursday: ", sum_thursday)
-    #print("Friday: ", sum_friday)
-
-    minimo=min([sum_monday, sum_tuesday, sum_wednesday, sum_thursday, sum_friday])
+    minimo = min([sum_monday, sum_tuesday, sum_wednesday, sum_thursday, sum_friday])
     maximo = max([sum_monday, sum_tuesday, sum_wednesday, sum_thursday, sum_friday])
-    result=abs(maximo-minimo)
-    #if not check_feasibility(individual):
-    #    result+=2000
+    result = abs(maximo - minimo)
+    return result
+
+def evaluator(individual):
+    v=[]
+    if cuatrimestre=="Primer cuatrimestre":
+        v.append(dif_curso(individual, grupos_11, 0))
+        v.append(dif_curso(individual, grupos_21, grupos_11*20))
+        v.append(dif_curso(individual, grupos_31, grupos_21*20+grupos_11*20))
+        v.append(dif_curso(individual, grupos_41, grupos_31*20+grupos_21*20+grupos_11*20))
+    else:
+        v.append(dif_curso(individual, grupos_12, 0))
+        v.append(dif_curso(individual, grupos_22, grupos_12*20))
+        v.append(dif_curso(individual, grupos_32, grupos_22*20+grupos_12*20))
+        v.append(dif_curso(individual, grupos_42, grupos_32*20+grupos_22*20+grupos_12*20))
+
+    minimo = min(v)
+    maximo = max(v)
+    result = abs(maximo - minimo)
     result =result+ 10*check_feasibility(individual)
     #print("Result: ", result)
     return (result, )
@@ -108,112 +100,189 @@ file="C:\\Users\\tr5568\\Desktop\\DAYANA\\PERSONAL\\" \
 read_file=xlrd.open_workbook(file)
 sheet=read_file.sheet_by_name("Asignaturas y Grupos")
 dict_asignaturas={}
-vector_es=[]
-vector_eu=[]
-vector_en=[]
+#vector_es=[]
+#vector_eu=[]
+#vector_en=[]
 dict_horassemanales={}
-curso_aux=int(1)
-cuatri_aux="Primer cuatrimestre"
+#curso_aux=int(1)
+#cuatri_aux="Primer cuatrimestre"
+vector_primer=[]
+vector_segundo=[]
 for row in range(2,sheet.nrows):
-    #Código de asignatura posición 0
-    curso=sheet.cell(row,2).value
-    cuatri=sheet.cell(row,3).value
-    #Si coinciden curso y cuatri de la fila, seguimos metiendo valores en el vector
-    if curso==curso_aux and cuatri==cuatri_aux:
-        #Columna 5: idioma ES y magistral. Columna 6: idioma ES y laboratorio.
-        if int(sheet.cell(row, 5).value)>0:
-            for i in range(1, int(sheet.cell(row, 5).value)+1):
-                codigo=str(int(sheet.cell(row,0).value))+"-M"+str(i).zfill(2)+"ES"
-                vector_es.append(codigo)
-                dict_horassemanales[codigo]=int(sheet.cell(row,14).value)
-        if int(sheet.cell(row, 6).value)>0:
-            for i in range(1, int(sheet.cell(row, 6).value)+1):
-                codigo=str(int(sheet.cell(row,0).value))+"-GL"+str(i).zfill(2)+"ES"
-                vector_es.append(codigo)
+    curso = sheet.cell(row, 2).value
+    cuatri = str(sheet.cell(row, 3).value)
+    c = 0
+    if int(cuatri.find("Primer")) >= 0:
+        c = int(1)
+    else:
+        c = int(2)
+    opt = str(sheet.cell(row, 4).value)
+    if len(opt) == 0:
+        opt = ""
+    else:
+        opt = "-" + opt
+    if (curso != "X"):
+        curso = int(curso)
+    else:
+        curso=int(3)
+
+    if cuatri=="Primer cuatrimestre":
+        # Columna 5: idioma ES y magistral. Columna 6: idioma ES y laboratorio.
+        if int(sheet.cell(row, 5).value) > 0:
+            for i in range(1, int(sheet.cell(row, 5).value) + 1):
+                codigo = str(int(sheet.cell(row, 0).value)) + "-M" + str(i).zfill(2) + "ES-" + str(curso) + str(c) + opt
+                vector_primer.append(codigo)
+                dict_horassemanales[codigo] = int(sheet.cell(row, 14).value)
+        if int(sheet.cell(row, 6).value) > 0:
+            for i in range(1, int(sheet.cell(row, 6).value) + 1):
+                codigo = str(int(sheet.cell(row, 0).value)) + "-GL" + str(i).zfill(2) + "ES-" + str(curso) + str(
+                    c) + opt
+                vector_primer.append(codigo)
                 dict_horassemanales[codigo] = int(sheet.cell(row, 15).value)
         # Columna 7: idioma EU y magistral. Columna 8: idioma EU y laboratorio.
         if int(sheet.cell(row, 7).value) > 0:
             for i in range(1, int(sheet.cell(row, 7).value) + 1):
-                codigo = str(int(sheet.cell(row, 0).value)) + "-M" + str(i).zfill(2) + "EU"
-                vector_eu.append(codigo)
+                codigo = str(int(sheet.cell(row, 0).value)) + "-M" + str(i).zfill(2) + "EU-" + str(curso) + str(c) + opt
+                vector_primer.append(codigo)
                 dict_horassemanales[codigo] = int(sheet.cell(row, 14).value)
         if int(sheet.cell(row, 8).value) > 0:
             for i in range(1, int(sheet.cell(row, 8).value) + 1):
-                codigo = str(int(sheet.cell(row, 0).value)) + "-GL" + str(i).zfill(2) + "EU"
-                vector_eu.append(codigo)
+                codigo = str(int(sheet.cell(row, 0).value)) + "-GL" + str(i).zfill(2) + "EU-" + str(curso) + str(
+                    c) + opt
+                vector_primer.append(codigo)
                 dict_horassemanales[codigo] = int(sheet.cell(row, 15).value)
         # Columna 9: idioma EN y magistral. Columna 10: idioma EN y laboratorio.
         if int(sheet.cell(row, 9).value) > 0:
             for i in range(1, int(sheet.cell(row, 9).value) + 1):
-                codigo = str(int(sheet.cell(row, 0).value)) + "-M" + str(i).zfill(2) + "EN"
-                vector_en.append(codigo)
+                codigo = str(int(sheet.cell(row, 0).value)) + "-M" + str(i).zfill(2) + "EN-" + str(curso) + str(c) + opt
+                vector_primer.append(codigo)
                 dict_horassemanales[codigo] = int(sheet.cell(row, 14).value)
         if int(sheet.cell(row, 10).value) > 0:
             for i in range(1, int(sheet.cell(row, 10).value) + 1):
-                codigo = str(int(sheet.cell(row, 0).value)) + "-GL" + str(i).zfill(2) + "EN"
-                vector_en.append(codigo)
+                codigo = str(int(sheet.cell(row, 0).value)) + "-GL" + str(i).zfill(2) + "EN-" + str(curso) + str(
+                    c) + opt
+                vector_primer.append(codigo)
                 dict_horassemanales[codigo] = int(sheet.cell(row, 15).value)
+
     else:
-        #Cuando deja de coincidir, significa que estamos en una fila que tiene alguno de los parámetros diferentes.
-        #Guardamos la info en el diccionario correspondiente, vaciamos los vectores y metemos
-        #el valor de dicha fila. Será el primer valor de la siguiente entrada del diccionario.
-        if(curso_aux!="X"): curso_aux=int(curso_aux)
-        dict_asignaturas[curso_aux, cuatri_aux, "ES"]=vector_es
-        dict_asignaturas[curso_aux, cuatri_aux, "EU"] = vector_eu
-        dict_asignaturas[curso_aux, cuatri_aux, "EN"] = vector_en
-        curso_aux=curso
-        cuatri_aux=cuatri
-        vector_es=[]
-        vector_eu = []
-        vector_en = []
-        if int(sheet.cell(row, 5).value)>0:
-            for i in range(1, int(sheet.cell(row, 5).value)+1):
-                codigo=str(int(sheet.cell(row,0).value))+"-M"+str(i).zfill(2)+"ES"
-                vector_es.append(codigo)
+        # Columna 5: idioma ES y magistral. Columna 6: idioma ES y laboratorio.
+        if int(sheet.cell(row, 5).value) > 0:
+            for i in range(1, int(sheet.cell(row, 5).value) + 1):
+                codigo = str(int(sheet.cell(row, 0).value)) + "-M" + str(i).zfill(2) + "ES-" + str(curso) + str(c) + opt
+                vector_segundo.append(codigo)
                 dict_horassemanales[codigo] = int(sheet.cell(row, 14).value)
-        if int(sheet.cell(row, 6).value)>0:
-            for i in range(1, int(sheet.cell(row, 6).value)+1):
-                codigo=str(int(sheet.cell(row,0).value))+"-GL"+str(i).zfill(2)+"ES"
-                vector_es.append(codigo)
+        if int(sheet.cell(row, 6).value) > 0:
+            for i in range(1, int(sheet.cell(row, 6).value) + 1):
+                codigo = str(int(sheet.cell(row, 0).value)) + "-GL" + str(i).zfill(2) + "ES-" + str(curso) + str(
+                    c) + opt
+                vector_segundo.append(codigo)
                 dict_horassemanales[codigo] = int(sheet.cell(row, 15).value)
+        # Columna 7: idioma EU y magistral. Columna 8: idioma EU y laboratorio.
         if int(sheet.cell(row, 7).value) > 0:
             for i in range(1, int(sheet.cell(row, 7).value) + 1):
-                codigo = str(int(sheet.cell(row, 0).value)) + "-M" + str(i).zfill(2) + "EU"
-                vector_eu.append(codigo)
+                codigo = str(int(sheet.cell(row, 0).value)) + "-M" + str(i).zfill(2) + "EU-" + str(curso) + str(c) + opt
+                vector_segundo.append(codigo)
                 dict_horassemanales[codigo] = int(sheet.cell(row, 14).value)
         if int(sheet.cell(row, 8).value) > 0:
             for i in range(1, int(sheet.cell(row, 8).value) + 1):
-                codigo = str(int(sheet.cell(row, 0).value)) + "-GL" + str(i).zfill(2) + "EU"
-                vector_eu.append(codigo)
+                codigo = str(int(sheet.cell(row, 0).value)) + "-GL" + str(i).zfill(2) + "EU-" + str(curso) + str(
+                    c) + opt
+                vector_segundo.append(codigo)
                 dict_horassemanales[codigo] = int(sheet.cell(row, 15).value)
+        # Columna 9: idioma EN y magistral. Columna 10: idioma EN y laboratorio.
         if int(sheet.cell(row, 9).value) > 0:
             for i in range(1, int(sheet.cell(row, 9).value) + 1):
-                codigo = str(int(sheet.cell(row, 0).value)) + "-M" + str(i).zfill(2) + "EN"
-                vector_en.append(codigo)
+                codigo = str(int(sheet.cell(row, 0).value)) + "-M" + str(i).zfill(2) + "EN-" + str(curso) + str(c) + opt
+                vector_segundo.append(codigo)
                 dict_horassemanales[codigo] = int(sheet.cell(row, 14).value)
         if int(sheet.cell(row, 10).value) > 0:
             for i in range(1, int(sheet.cell(row, 10).value) + 1):
-                codigo = str(int(sheet.cell(row, 0).value)) + "-GL" + str(i).zfill(2) + "EN"
-                vector_en.append(codigo)
+                codigo = str(int(sheet.cell(row, 0).value)) + "-GL" + str(i).zfill(2) + "EN-" + str(curso) + str(
+                    c) + opt
+                vector_segundo.append(codigo)
                 dict_horassemanales[codigo] = int(sheet.cell(row, 15).value)
 
+dict_asignaturas["Primer cuatrimestre"]=vector_primer
+dict_asignaturas["Segundo cuatrimestre"]=vector_segundo
+
+grupos_11=0
+grupos_21=0
+grupos_31=0
+grupos_41=0
+grupos_12=0
+grupos_22=0
+grupos_32=0
+grupos_42=0
+
+for item in vector_primer:
+    if item.split("-")[2]=='11':
+        grupos_11 +=1
+    elif item.split("-")[2]=='21':
+        grupos_21 += 1
+    elif item.split("-")[2] == '31':
+        grupos_31 += 1
+    else:
+        grupos_41 += 1
+
+for item in vector_segundo:
+    if item.split("-")[2]=='12':
+        grupos_12 += 1
+    elif item.split("-")[2] == '22':
+        grupos_22 += 1
+    elif item.split("-")[2] == '32':
+        grupos_32 += 1
+    else:
+        grupos_42+=1
+
+#print("GRUPOS 42: ", grupos_42)
+#print(dict_asignaturas["Primer cuatrimestre"])
 #print(dict_asignaturas)
 #print(dict_horassemanales)
 #print(len(dict_horassemanales))
+
+
+#################################################################################
+#VARIABLES GLOBALES
+#Ejemplo cuatrimestre , 1º curso
+cuatrimestre="Primer cuatrimestre"
+tam=len(dict_asignaturas[cuatrimestre])
+asignaturas=dict_asignaturas[cuatrimestre]
+asignaturas.sort(key= lambda x: int(x.split("-")[2]))
+bloques=['Lunes1', "Lunes2", "Lunes3", "Lunes4", "Martes1", "Martes2", "Martes3", "Martes4",
+         "Miércoles1", "Miércoles2", "Miércoles3", "Miércoles4", "Jueves1", "Jueves2", "Jueves3",
+         "Jueves4", "Viernes1", "Viernes2", "Viernes3", "Viernes4"]
+
+#print(asignaturas)
 ###################################################################################
 #MATRIZ DE INCOMPATIBILIDADES
 #Creamos la matriz de incompatibilidades
 #Podrán solaparse aquellos grupos que compartiendo curso, cuatri e idioma, sean de tipo laboratorio.
-tam=len(dict_asignaturas[1, "Primer cuatrimestre", "ES"])
+#tam=len(dict_asignaturas[1, "Primer cuatrimestre", "ES"])+len(dict_asignaturas[1, "Segundo cuatrimestre", "ES"])
+#tam=len(dict_asignaturas["Primer cuatrimestre"])
 matrix=np.ones([tam, tam], dtype=np.int)
-incomp_df=pd.DataFrame(matrix, index=dict_asignaturas[1, "Primer cuatrimestre", "ES"], columns=dict_asignaturas[1, "Primer cuatrimestre", "ES"])
+#v=dict_asignaturas["Primer cuatrimestre"]
+#Ordenamos el vector de asignaturas por cursos
+#v.sort(key= lambda x: int(x.split("-")[2]))
+#print("ORDENADO",v)
+
+
+
+#print(v)
+#incomp_df=pd.DataFrame(matrix, index=dict_asignaturas[1, "Primer cuatrimestre", "ES"], columns=dict_asignaturas[1, "Primer cuatrimestre", "ES"])
+incomp_df=pd.DataFrame(matrix, index=asignaturas, columns=asignaturas)
 #print(incomp_df)
 
 #Creamos un dataframe para tener en indice_fila y col los códigos únicos de cada asignatura.
 #Primero lo creamos con 1.0 y después, lo cambiamos por un 0 en los casos en los que
-#se trate de dos grupos de laboratorio de diferente asignatura. Un 0 indica que son compatibles:
+#se trate de dos grupos de laboratorio de diferente asignatura. Un 0 indica que son compatibles.
+#También es necesario añadir la condición de compatibilidad si se trata de asignaturas de
+#diferente cuatrimestre, de diferente idioma y de diferente curso.
 for col in incomp_df:
     #print(col)
+    curso_cuatri=int(col.split("-")[2])
+    grupo_idioma=col.split("-")[1]
+    idioma=grupo_idioma[len(grupo_idioma)-2]+grupo_idioma[len(grupo_idioma)-1]
+    #print(curso_cuatri)
     if "GL" in col:
         for indice_fila, fila in incomp_df.iterrows():
             #print(indice_fila)
@@ -221,8 +290,24 @@ for col in incomp_df:
             if "GL" in indice_fila and indice_fila!=col:
                 incomp_df.at[indice_fila, col]=0
 
+    if "LC" in col:
+        opt = col.split("-")[3]
+        for indice_fila, fila in incomp_df.iterrows():
+            if "LC" in indice_fila and indice_fila!=col and indice_fila.split("-")[3]!=opt:
+                incomp_df.at[indice_fila, col]=0
 
-#print(incomp_df)
+    for indice_fila, fila in incomp_df.iterrows():
+        curso_cuatri_aux=int(indice_fila.split("-")[2])
+        if curso_cuatri_aux!=curso_cuatri:
+            incomp_df.at[indice_fila, col] = 0
+
+    for indice_fila, fila in incomp_df.iterrows():
+        grupo_idioma_aux=indice_fila.split("-")[1]
+        idioma_aux = grupo_idioma_aux[len(grupo_idioma_aux)-2] + grupo_idioma_aux[len(grupo_idioma_aux)-1]
+        if idioma_aux!=idioma:
+            incomp_df.at[indice_fila, col] = 0
+
+#print(incomp_df.loc[:,"26009-GL01ES-11"])
 #print(dict_horassemanales)
 #print(dict_asignaturas[1, "Primer cuatrimestre", "ES"])
 ################################################################################
@@ -298,14 +383,7 @@ def check_feasibility(individual):
     # #print("PENALTY LENTO: ", penalty_lento)
     return penalty
 
-#################################################################################
-#VARIABLES GLOBALES
-#Ejemplo cuatrimestre , 1º curso
-tam=len(dict_asignaturas[1, "Primer cuatrimestre", "ES"])
-asignaturas=dict_asignaturas[1, "Primer cuatrimestre", "ES"]
-bloques=['Lunes1', "Lunes2", "Lunes3", "Lunes4", "Martes1", "Martes2", "Martes3", "Martes4",
-         "Miércoles1", "Miércoles2", "Miércoles3", "Miércoles4", "Jueves1", "Jueves2", "Jueves3",
-         "Jueves4", "Viernes1", "Viernes2", "Viernes3", "Viernes4"]
+
 
 ################################################################################
 #ALGORITMO GENÉTICO
@@ -349,7 +427,7 @@ def main():
         toolbox.register("select", tools.selTournament, tournsize=3)
 
         # Creamos la población
-        pop = toolbox.population(n=10000)
+        pop = toolbox.population(n=6000)
         hof = tools.HallOfFame(1, similar=np.array_equal)
         fitnesses = list(map(toolbox.evaluate, pop))
         for ind, fit in zip(pop, fitnesses):
@@ -363,7 +441,7 @@ def main():
         # Se almacenan en fits los valores de fitness de los individuos
         fits = [ind.fitness.values[0] for ind in pop]
 
-        fbest = np.ndarray((100, 1))
+        #fbest = np.ndarray((100, 1))
         # g=variable que cuenta el número de iteraciones realizadas
         g = 0
         # Comienza la evolución
@@ -441,10 +519,14 @@ def main():
 
 
 #Ejecutamos el algoritmo genético
-#main()
+main()
 
 
 
+
+#########################################################################
+#CÓDIGO ANTIGUO
+##########################################################################
 # comp=True
 # for col in df:
 #     #print(col)
@@ -469,19 +551,104 @@ def main():
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
+########################################################################
+#PRIMERA VERSIÓN DEL CÓDIGO DE LECTURA DE DATOS
+# for row in range(2,sheet.nrows):
+#     #Código de asignatura posición 0
+#     curso=sheet.cell(row,2).value
+#     cuatri=str(sheet.cell(row,3).value)
+#     c=0
+#     if int(cuatri.find("Primer") )>=0:
+#         c = int(1)
+#     else:
+#         c = int(2)
+#     opt=str(sheet.cell(row,4).value)
+#     if len(opt)==0:
+#         opt = ""
+#     else:
+#         opt = "-" + opt
+#     if (curso != "X"): curso= int(curso)
+#     #if (curso == "X"): curso = int(3)
+#     #curso=int(curso)
+#     #Si coinciden curso y cuatri de la fila, seguimos metiendo valores en el vector
+#     if curso==curso_aux and cuatri==cuatri_aux:
+#         #Columna 5: idioma ES y magistral. Columna 6: idioma ES y laboratorio.
+#         if int(sheet.cell(row, 5).value)>0:
+#             for i in range(1, int(sheet.cell(row, 5).value)+1):
+#                 codigo=str(int(sheet.cell(row,0).value))+"-M"+str(i).zfill(2)+"ES-"+str(curso)+str(c)+opt
+#                 vector_es.append(codigo)
+#                 dict_horassemanales[codigo]=int(sheet.cell(row,14).value)
+#         if int(sheet.cell(row, 6).value)>0:
+#             for i in range(1, int(sheet.cell(row, 6).value)+1):
+#                 codigo=str(int(sheet.cell(row,0).value))+"-GL"+str(i).zfill(2)+"ES-"+str(curso)+str(c)+opt
+#                 vector_es.append(codigo)
+#                 dict_horassemanales[codigo] = int(sheet.cell(row, 15).value)
+#         # Columna 7: idioma EU y magistral. Columna 8: idioma EU y laboratorio.
+#         if int(sheet.cell(row, 7).value) > 0:
+#             for i in range(1, int(sheet.cell(row, 7).value) + 1):
+#                 codigo = str(int(sheet.cell(row, 0).value)) + "-M" + str(i).zfill(2) + "EU-"+str(curso)+str(c)+opt
+#                 vector_eu.append(codigo)
+#                 dict_horassemanales[codigo] = int(sheet.cell(row, 14).value)
+#         if int(sheet.cell(row, 8).value) > 0:
+#             for i in range(1, int(sheet.cell(row, 8).value) + 1):
+#                 codigo = str(int(sheet.cell(row, 0).value)) + "-GL" + str(i).zfill(2) + "EU-"+str(curso)+str(c)+opt
+#                 vector_eu.append(codigo)
+#                 dict_horassemanales[codigo] = int(sheet.cell(row, 15).value)
+#         # Columna 9: idioma EN y magistral. Columna 10: idioma EN y laboratorio.
+#         if int(sheet.cell(row, 9).value) > 0:
+#             for i in range(1, int(sheet.cell(row, 9).value) + 1):
+#                 codigo = str(int(sheet.cell(row, 0).value)) + "-M" + str(i).zfill(2) + "EN-"+str(curso)+str(c)+opt
+#                 vector_en.append(codigo)
+#                 dict_horassemanales[codigo] = int(sheet.cell(row, 14).value)
+#         if int(sheet.cell(row, 10).value) > 0:
+#             for i in range(1, int(sheet.cell(row, 10).value) + 1):
+#                 codigo = str(int(sheet.cell(row, 0).value)) + "-GL" + str(i).zfill(2) + "EN-"+str(curso)+str(c)+opt
+#                 vector_en.append(codigo)
+#                 dict_horassemanales[codigo] = int(sheet.cell(row, 15).value)
+#     else:
+#         #Cuando deja de coincidir, significa que estamos en una fila que tiene alguno de los parámetros diferentes.
+#         #Guardamos la info en el diccionario correspondiente, vaciamos los vectores y metemos
+#         #el valor de dicha fila. Será el primer valor de la siguiente entrada del diccionario.
+#         if(curso_aux!="X"): curso_aux=int(curso_aux)
+#         #if (curso_aux == "X"): curso_aux = int(3)
+#         dict_asignaturas[curso_aux, cuatri_aux, "ES"]=vector_es
+#         dict_asignaturas[curso_aux, cuatri_aux, "EU"] = vector_eu
+#         dict_asignaturas[curso_aux, cuatri_aux, "EN"] = vector_en
+#         curso_aux=curso
+#         cuatri_aux=cuatri
+#         vector_es=[]
+#         vector_eu = []
+#         vector_en = []
+#         if int(sheet.cell(row, 5).value)>0:
+#             for i in range(1, int(sheet.cell(row, 5).value)+1):
+#                 codigo=str(int(sheet.cell(row,0).value))+"-M"+str(i).zfill(2)+"ES-"+str(curso)+str(c)+opt
+#                 vector_es.append(codigo)
+#                 dict_horassemanales[codigo] = int(sheet.cell(row, 14).value)
+#         if int(sheet.cell(row, 6).value)>0:
+#             for i in range(1, int(sheet.cell(row, 6).value)+1):
+#                 codigo=str(int(sheet.cell(row,0).value))+"-GL"+str(i).zfill(2)+"ES-"+str(curso)+str(c)+opt
+#                 vector_es.append(codigo)
+#                 dict_horassemanales[codigo] = int(sheet.cell(row, 15).value)
+#         if int(sheet.cell(row, 7).value) > 0:
+#             for i in range(1, int(sheet.cell(row, 7).value) + 1):
+#                 codigo = str(int(sheet.cell(row, 0).value)) + "-M" + str(i).zfill(2) + "EU-"+str(curso)+str(c)+opt
+#                 vector_eu.append(codigo)
+#                 dict_horassemanales[codigo] = int(sheet.cell(row, 14).value)
+#         if int(sheet.cell(row, 8).value) > 0:
+#             for i in range(1, int(sheet.cell(row, 8).value) + 1):
+#                 codigo = str(int(sheet.cell(row, 0).value)) + "-GL" + str(i).zfill(2) + "EU-"+str(curso)+str(c)+opt
+#                 vector_eu.append(codigo)
+#                 dict_horassemanales[codigo] = int(sheet.cell(row, 15).value)
+#         if int(sheet.cell(row, 9).value) > 0:
+#             for i in range(1, int(sheet.cell(row, 9).value) + 1):
+#                 codigo = str(int(sheet.cell(row, 0).value)) + "-M" + str(i).zfill(2) + "EN-"+str(curso)+str(c)+opt
+#                 vector_en.append(codigo)
+#                 dict_horassemanales[codigo] = int(sheet.cell(row, 14).value)
+#         if int(sheet.cell(row, 10).value) > 0:
+#             for i in range(1, int(sheet.cell(row, 10).value) + 1):
+#                 codigo = str(int(sheet.cell(row, 0).value)) + "-GL" + str(i).zfill(2) + "EN-"+str(curso)+str(c)+opt
+#                 vector_en.append(codigo)
+#                 dict_horassemanales[codigo] = int(sheet.cell(row, 15).value)
 
 ##############################################################################
 # #VERSIÓN CORTA DEL ALGORITMO GENÉTICO
@@ -516,3 +683,54 @@ def main():
 #
 # out_file="solucion.xlsx"
 # df.to_excel(out_file, index=False)
+
+################################################################################
+# #FUNCIÓN DE EVALUACIÓN INICIAL
+# def evaluator(individual):
+#     #Aquí se debe calcular la diferencia entre el día que más horas lectivas posee
+#     #y el día que menos
+#     l=len(individual)
+#     result=0
+#     j=0
+#     sum_monday=0
+#     sum_tuesday=0
+#     sum_wednesday=0
+#     sum_thursday=0
+#     sum_friday=0
+#     #Se recorre el vector total.
+#     #individual es un vector que contiene la info de los grupo-asignatura por bloques
+#     #de forma consecutiva. Es decir, de 0-19 toda la info del Grupo-Asign1, de 20-30 Grupo-Asing2, etc
+#     #Además, el vector correspondiente al grupo-asign está la info de todos los bloques horarios.
+#     #Sabemos que cada día tiene 4 bloques posibles, luego para saber las horas por cada día serían los
+#     #bloques 0-3 para el lunes, 4-7 para el martes, 8-11 para el miércoles, etc.
+#     while j < l:
+#         #for i in range(j, j+4):
+#         #    sum_monday=sum_monday+individual[i]
+#         sum_monday+=sum(individual[j:j+4])
+#         #for i in range(j+4, j+8):
+#          #   sum_tuesday=sum_tuesday+individual[i]
+#         sum_tuesday += sum(individual[j+4:j + 8])
+#         #for i in range(j + 8, j + 12):
+#          #   sum_wednesday = sum_wednesday + individual[i]
+#         sum_wednesday += sum(individual[j + 8:j + 12])
+#         #for i in range(j + 12, j + 16):
+#             #sum_thursday = sum_thursday + individual[i]
+#         sum_thursday +=sum(individual[j + 12:j + 16])
+#         #for i in range(j + 16, j + 20):
+#             #sum_friday = sum_friday + individual[i]
+#         sum_friday +=sum(individual[j + 16:j + 20])
+#         j+=20
+#     #print("Monday: ", sum_monday)
+#     #print("Tuesday: ", sum_tuesday)
+#     #print("Wednesday: ", sum_wednesday)
+#     #print("Thursday: ", sum_thursday)
+#     #print("Friday: ", sum_friday)
+#
+#     minimo=min([sum_monday, sum_tuesday, sum_wednesday, sum_thursday, sum_friday])
+#     maximo = max([sum_monday, sum_tuesday, sum_wednesday, sum_thursday, sum_friday])
+#     result=abs(maximo-minimo)
+#     #if not check_feasibility(individual):
+#     #    result+=2000
+#     result =result+ 10*check_feasibility(individual)
+#     #print("Result: ", result)
+#     return (result, )
