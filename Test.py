@@ -45,7 +45,8 @@ def get_choice():
     else:
         return 0
 
-
+#FUNCIÓN QUE CALCULA LA DIFERENCIA ENTRE EL DÍA CON MÁS HORAS Y EL DÍA CON MENOS
+#Se llama desde la función evaluator
 def dif_curso(individual, tam_curso, inicio):
     j = inicio
     #print(inicio)
@@ -55,8 +56,10 @@ def dif_curso(individual, tam_curso, inicio):
     sum_thursday = 0
     sum_friday = 0
     #Multiplicamos el tam del curso por 20 (bloques temporales a la semana)
-    while j < (tam_curso*20):
+    #print("FINAL BUCLE: ", tam_curso*20+inicio)
+    while j < (tam_curso*20+inicio):
         sum_monday+=sum(individual[j:j+4])
+        #print("sum monday", sum_monday)
         sum_tuesday += sum(individual[j+4:j + 8])
         sum_wednesday += sum(individual[j + 8:j + 12])
         sum_thursday +=sum(individual[j + 12:j + 16])
@@ -64,9 +67,19 @@ def dif_curso(individual, tam_curso, inicio):
         j+=20
     minimo = min([sum_monday, sum_tuesday, sum_wednesday, sum_thursday, sum_friday])
     maximo = max([sum_monday, sum_tuesday, sum_wednesday, sum_thursday, sum_friday])
+    #print("maximo ", maximo)
+    #print("minimo ", minimo)
     result = abs(maximo - minimo)
+    #print("INICIO ", inicio)
+    #print("TAM CURSO:",tam_curso)
+    #print("INDIVIDUO: ", individual)
+    #print("RESULT: ", result)
+    #print("DIFERENCIA CURSO: ", result)
     return result
 
+#################################################################################
+#FUNCIÓN QUE EVALÚA POR CURSOS
+# Esta función se utiliza si se escoge el método datos_cuatrimestres
 def evaluator_cursos(individual):
     v=[]
     if cuatrimestre=="Primer cuatrimestre":
@@ -87,6 +100,30 @@ def evaluator_cursos(individual):
     #print("Result: ", result)
     return (result, )
 
+#FUNCIÓN QUE EVALÚA POR CURSOS E IDIOMA
+# Esta función se utiliza si se escoge el método datos_curso
+def evaluator2(individual):
+
+    keys=dict_ev.keys()
+    j=0
+    result=0
+    for k in keys:
+        #print("RESULT ANTES: ", result)
+        #print("Key: ", k)
+        #print("Len: ", len(dict_ev[k]))
+        #print("j: ", j)
+        result+=dif_curso(individual, len(dict_ev[k]), j)
+        #print("RESULT DESPUÉS: ", result)
+        j+=(len(dict_ev[k])*20)
+    #print("suma resultado: ", result)
+    #print("FEASIBILITY: ", check_feasibility(individual))
+    result =result+ 10*check_feasibility(individual)
+    #print("RESULTADO FINAL: ", result)
+    return (result, )
+
+#################################################################################
+#FUNCIÓN ORIGINAL
+#Evalúa el individuo sin separar por cursos. Entero.
 def evaluator(individual):
     #Aquí se debe calcular la diferencia entre el día que más horas lectivas posee
     #y el día que menos
@@ -139,10 +176,8 @@ def evaluator(individual):
 #print("FUNCIÓN EVAL: ", evaluator(list([1, 1, 1, 1, 0, 0, 0, 0, 1, 1, 0, 0, 1, 1, 0, 0, 1, 1, 1, 0])))
 
 ##################################################################################
-
-
-
-
+#FUNCIÓN QUE ALMACENA LOS DATOS DE ENTRADA EN UN DICCIONARIO
+#DICT [ "Cuatrimestre"]
 def datos_cuatrimestres():
     grupos_11 = 0
     grupos_21 = 0
@@ -267,6 +302,9 @@ def datos_cuatrimestres():
 
     return (grupos_11, grupos_21, grupos_31, grupos_41, grupos_21, grupos_22, grupos_32, grupos_42)
 
+#################################################################################
+#FUNCIÓN QUE ALMACENA LOS DATOS DE ENTRADA EN UN DICCIONARIO
+#DICT [ "Curso", "Cuatrimestre", "Idioma"]
 def datos_curso():
     curso_aux=int(1)
     cuatri_aux="Primer cuatrimestre"
@@ -291,41 +329,45 @@ def datos_curso():
         #if (curso == "X"): curso = int(3)
         #curso=int(curso)
         #Si coinciden curso y cuatri de la fila, seguimos metiendo valores en el vector
+        #print("CURSO: ", curso)
+        #print("CUATRI: ", cuatri)
         if curso==curso_aux and cuatri==cuatri_aux:
+
             #Columna 5: idioma ES y magistral. Columna 6: idioma ES y laboratorio.
             if int(sheet.cell(row, 5).value)>0:
                 for i in range(1, int(sheet.cell(row, 5).value)+1):
                     codigo=str(int(sheet.cell(row,0).value))+"-M"+str(i).zfill(2)+"ES-"+str(curso)+str(c)+opt
                     vector_es.append(codigo)
-                    dict_horassemanales[codigo]=int(sheet.cell(row,14).value)
+                    dict_horassemanales[codigo.replace("X", "3")]=int(sheet.cell(row,14).value)
             if int(sheet.cell(row, 6).value)>0:
                 for i in range(1, int(sheet.cell(row, 6).value)+1):
                     codigo=str(int(sheet.cell(row,0).value))+"-GL"+str(i).zfill(2)+"ES-"+str(curso)+str(c)+opt
                     vector_es.append(codigo)
-                    dict_horassemanales[codigo] = int(sheet.cell(row, 15).value)
+                    dict_horassemanales[codigo.replace("X", "3")] = int(sheet.cell(row, 15).value)
             # Columna 7: idioma EU y magistral. Columna 8: idioma EU y laboratorio.
             if int(sheet.cell(row, 7).value) > 0:
                 for i in range(1, int(sheet.cell(row, 7).value) + 1):
                     codigo = str(int(sheet.cell(row, 0).value)) + "-M" + str(i).zfill(2) + "EU-"+str(curso)+str(c)+opt
                     vector_eu.append(codigo)
-                    dict_horassemanales[codigo] = int(sheet.cell(row, 14).value)
+                    dict_horassemanales[codigo.replace("X", "3")] = int(sheet.cell(row, 14).value)
             if int(sheet.cell(row, 8).value) > 0:
                 for i in range(1, int(sheet.cell(row, 8).value) + 1):
                     codigo = str(int(sheet.cell(row, 0).value)) + "-GL" + str(i).zfill(2) + "EU-"+str(curso)+str(c)+opt
                     vector_eu.append(codigo)
-                    dict_horassemanales[codigo] = int(sheet.cell(row, 15).value)
+                    dict_horassemanales[codigo.replace("X", "3")] = int(sheet.cell(row, 15).value)
             # Columna 9: idioma EN y magistral. Columna 10: idioma EN y laboratorio.
             if int(sheet.cell(row, 9).value) > 0:
                 for i in range(1, int(sheet.cell(row, 9).value) + 1):
                     codigo = str(int(sheet.cell(row, 0).value)) + "-M" + str(i).zfill(2) + "EN-"+str(curso)+str(c)+opt
                     vector_en.append(codigo)
-                    dict_horassemanales[codigo] = int(sheet.cell(row, 14).value)
+                    dict_horassemanales[codigo.replace("X", "3")] = int(sheet.cell(row, 14).value)
             if int(sheet.cell(row, 10).value) > 0:
                 for i in range(1, int(sheet.cell(row, 10).value) + 1):
                     codigo = str(int(sheet.cell(row, 0).value)) + "-GL" + str(i).zfill(2) + "EN-"+str(curso)+str(c)+opt
                     vector_en.append(codigo)
-                    dict_horassemanales[codigo] = int(sheet.cell(row, 15).value)
+                    dict_horassemanales[codigo.replace("X", "3")] = int(sheet.cell(row, 15).value)
         else:
+
             #Cuando deja de coincidir, significa que estamos en una fila que tiene alguno de los parámetros diferentes.
             #Guardamos la info en el diccionario correspondiente, vaciamos los vectores y metemos
             #el valor de dicha fila. Será el primer valor de la siguiente entrada del diccionario.
@@ -343,40 +385,87 @@ def datos_curso():
                 for i in range(1, int(sheet.cell(row, 5).value)+1):
                     codigo=str(int(sheet.cell(row,0).value))+"-M"+str(i).zfill(2)+"ES-"+str(curso)+str(c)+opt
                     vector_es.append(codigo)
-                    dict_horassemanales[codigo] = int(sheet.cell(row, 14).value)
+                    dict_horassemanales[codigo.replace("X", "3")] = int(sheet.cell(row, 14).value)
             if int(sheet.cell(row, 6).value)>0:
                 for i in range(1, int(sheet.cell(row, 6).value)+1):
                     codigo=str(int(sheet.cell(row,0).value))+"-GL"+str(i).zfill(2)+"ES-"+str(curso)+str(c)+opt
                     vector_es.append(codigo)
-                    dict_horassemanales[codigo] = int(sheet.cell(row, 15).value)
+                    dict_horassemanales[codigo.replace("X", "3")] = int(sheet.cell(row, 15).value)
             if int(sheet.cell(row, 7).value) > 0:
                 for i in range(1, int(sheet.cell(row, 7).value) + 1):
                     codigo = str(int(sheet.cell(row, 0).value)) + "-M" + str(i).zfill(2) + "EU-"+str(curso)+str(c)+opt
                     vector_eu.append(codigo)
-                    dict_horassemanales[codigo] = int(sheet.cell(row, 14).value)
+                    dict_horassemanales[codigo.replace("X", "3")] = int(sheet.cell(row, 14).value)
             if int(sheet.cell(row, 8).value) > 0:
                 for i in range(1, int(sheet.cell(row, 8).value) + 1):
                     codigo = str(int(sheet.cell(row, 0).value)) + "-GL" + str(i).zfill(2) + "EU-"+str(curso)+str(c)+opt
                     vector_eu.append(codigo)
-                    dict_horassemanales[codigo] = int(sheet.cell(row, 15).value)
+                    dict_horassemanales[codigo.replace("X", "3")] = int(sheet.cell(row, 15).value)
             if int(sheet.cell(row, 9).value) > 0:
                 for i in range(1, int(sheet.cell(row, 9).value) + 1):
                     codigo = str(int(sheet.cell(row, 0).value)) + "-M" + str(i).zfill(2) + "EN-"+str(curso)+str(c)+opt
                     vector_en.append(codigo)
-                    dict_horassemanales[codigo] = int(sheet.cell(row, 14).value)
+                    dict_horassemanales[codigo.replace("X", "3")] = int(sheet.cell(row, 14).value)
             if int(sheet.cell(row, 10).value) > 0:
                 for i in range(1, int(sheet.cell(row, 10).value) + 1):
                     codigo = str(int(sheet.cell(row, 0).value)) + "-GL" + str(i).zfill(2) + "EN-"+str(curso)+str(c)+opt
                     vector_en.append(codigo)
-                    dict_horassemanales[codigo] = int(sheet.cell(row, 15).value)
+                    dict_horassemanales[codigo.replace("X", "3")] = int(sheet.cell(row, 15).value)
+    #Escribimos la última parte del excel
+    dict_asignaturas[curso_aux, cuatri_aux, "ES"] = vector_es
+    dict_asignaturas[curso_aux, cuatri_aux, "EU"] = vector_eu
+    dict_asignaturas[curso_aux, cuatri_aux, "EN"] = vector_en
+
+    #print("DICCIONARIO: ", dict_asignaturas)
+    #Necesario convertir el curso "X" en 3º. Así que, juntamos ambas entradas del diccionario.
+    #Idioma ES, Primer cuatrimestre
+    vec=dict_asignaturas[3, "Primer cuatrimestre", "ES"]+dict_asignaturas['X', "Primer cuatrimestre", "ES"]
+    vec_new=[]
+    [vec_new.append(s.replace("X", "3")) for s in vec]
+    dict_asignaturas[3, "Primer cuatrimestre", "ES"]=vec_new
+    del dict_asignaturas['X', "Primer cuatrimestre", "ES"]
+    #Idioma ES, Segundo cuatrimestre
+    vec = dict_asignaturas[3, "Segundo cuatrimestre", "ES"] + dict_asignaturas['X', "Segundo cuatrimestre", "ES"]
+    vec_new = []
+    [vec_new.append(s.replace("X", "3")) for s in vec]
+    dict_asignaturas[3, "Segundo cuatrimestre", "ES"] = vec_new
+    del dict_asignaturas['X', "Segundo cuatrimestre", "ES"]
+    # Idioma EU, Primer cuatrimestre
+    vec = dict_asignaturas[3, "Primer cuatrimestre", "EU"] + dict_asignaturas['X', "Primer cuatrimestre", "EU"]
+    vec_new = []
+    [vec_new.append(s.replace("X", "3")) for s in vec]
+    dict_asignaturas[3, "Primer cuatrimestre", "EU"] = vec_new
+    del dict_asignaturas['X', "Primer cuatrimestre", "EU"]
+    # Idioma EU, Segundo cuatrimestre
+    vec = dict_asignaturas[3, "Segundo cuatrimestre", "EU"] + dict_asignaturas['X', "Segundo cuatrimestre", "EU"]
+    vec_new = []
+    [vec_new.append(s.replace("X", "3")) for s in vec]
+    dict_asignaturas[3, "Segundo cuatrimestre", "EU"] = vec_new
+    del dict_asignaturas['X', "Segundo cuatrimestre", "EU"]
+    # Idioma EN, Primer cuatrimestre
+    vec = dict_asignaturas[3, "Primer cuatrimestre", "EN"] + dict_asignaturas['X', "Primer cuatrimestre", "EN"]
+    vec_new = []
+    [vec_new.append(s.replace("X", "3")) for s in vec]
+    dict_asignaturas[3, "Primer cuatrimestre", "EN"] = vec_new
+    del dict_asignaturas['X', "Primer cuatrimestre", "EN"]
+    # Idioma EN, Segundo cuatrimestre
+    vec = dict_asignaturas[3, "Segundo cuatrimestre", "EN"] + dict_asignaturas['X', "Segundo cuatrimestre", "EN"]
+    vec_new = []
+    [vec_new.append(s.replace("X", "3")) for s in vec]
+    dict_asignaturas[3, "Segundo cuatrimestre", "EN"] = vec_new
+    del dict_asignaturas['X', "Segundo cuatrimestre", "EN"]
+
+
+    #Necesario modificar también el diccionario de horas semanales
+    #Lo modificamos haciendo un replace cuando se introducen los datos. En caso de que exista una X,
+    #la reemplazará por un 3
+    print("HORAS SEMANALES", dict_horassemanales)
 
 #print("GRUPOS 42: ", grupos_42)
 #print(dict_asignaturas["Primer cuatrimestre"])
 #print(dict_asignaturas)
 #print(dict_horassemanales)
 #print(len(dict_horassemanales))
-
-
 
 
 
@@ -481,7 +570,7 @@ def main():
         pool=multiprocessing.Pool(processes=3)
         toolbox.register("map", pool.map)
         #Utilizamos la función evaluator que creamos como función de evaluación
-        toolbox.register("evaluate", evaluator)
+        toolbox.register("evaluate", evaluator2)
         #Añadimos la función para penalizar en caso de no cumplir las restricciones
         #toolbox.decorate("evaluate", tools.DeltaPenalty(check_feasibility, 20000))
         #toolbox.register("mate", tools.cxOnePoint)
@@ -614,9 +703,29 @@ datos_curso()
 #asignaturas.sort(key= lambda x: int(x.split("-")[2]))
 
 #Caso de diccionario por curso, idioma, cuatrimestre
-tam=len(dict_asignaturas[1, "Primer cuatrimestre", "ES"])+len(dict_asignaturas[1, "Primer cuatrimestre", "EU"])
-asignaturas=dict_asignaturas[1, "Primer cuatrimestre", "ES"]+dict_asignaturas[1, "Primer cuatrimestre", "EU"]
-print(asignaturas)
+#tam=len(dict_asignaturas[2, "Primer cuatrimestre", "ES"])+len(dict_asignaturas[2, "Primer cuatrimestre", "EU"])+\
+    #len(dict_asignaturas[2, "Primer cuatrimestre", "EN"])
+tam=len(dict_asignaturas[1, "Primer cuatrimestre", "ES"])+len(dict_asignaturas[1, "Primer cuatrimestre", "EU"])+\
+    len(dict_asignaturas[2, "Primer cuatrimestre", "ES"])+len(dict_asignaturas[2, "Primer cuatrimestre", "EU"])+len(dict_asignaturas[2, "Primer cuatrimestre", "EN"])+\
+    len(dict_asignaturas[3, "Primer cuatrimestre", "ES"])+len(dict_asignaturas[3, "Primer cuatrimestre", "EU"])
+#tam=len(dict_asignaturas[2, "Primer cuatrimestre", "ES"])+len(dict_asignaturas[2, "Primer cuatrimestre", "EU"])+len(dict_asignaturas[2, "Primer cuatrimestre", "EN"])
+dict_ev={}
+dict_ev[1, "Primer cuatrimestre", "ES"]=dict_asignaturas[1, "Primer cuatrimestre", "ES"]
+dict_ev[1, "Primer cuatrimestre", "EU"]=dict_asignaturas[1, "Primer cuatrimestre", "EU"]
+dict_ev[2, "Primer cuatrimestre", "ES"]=dict_asignaturas[2, "Primer cuatrimestre", "ES"]
+dict_ev[2, "Primer cuatrimestre", "EU"]=dict_asignaturas[2, "Primer cuatrimestre", "EU"]
+dict_ev[2, "Primer cuatrimestre", "EN"]=dict_asignaturas[2, "Primer cuatrimestre", "EN"]
+dict_ev[3, "Primer cuatrimestre", "ES"]=dict_asignaturas[3, "Primer cuatrimestre", "ES"]
+dict_ev[3, "Primer cuatrimestre", "EU"]=dict_asignaturas[3, "Primer cuatrimestre", "EU"]
+
+#print(dict_ev)
+asignaturas=dict_asignaturas[1, "Primer cuatrimestre", "ES"]+dict_asignaturas[1, "Primer cuatrimestre", "EU"]+\
+           dict_asignaturas[2, "Primer cuatrimestre", "ES"]+dict_asignaturas[2, "Primer cuatrimestre", "EU"]+dict_asignaturas[2, "Primer cuatrimestre", "EN"]+\
+            dict_asignaturas[3, "Primer cuatrimestre", "ES"]+dict_asignaturas[3, "Primer cuatrimestre", "EU"]
+#asignaturas=dict_asignaturas[2, "Primer cuatrimestre", "ES"]+dict_asignaturas[2, "Primer cuatrimestre", "EU"]+dict_asignaturas[2, "Primer cuatrimestre", "EN"]
+#asignaturas=dict_asignaturas[2, "Primer cuatrimestre", "ES"]+dict_asignaturas[2, "Primer cuatrimestre", "EU"]+\
+                #dict_asignaturas[2, "Primer cuatrimestre", "EN"]
+#print(dict_ev)
 asignaturas.sort(key= lambda x: int(x.split("-")[2]))
 
 bloques=['Lunes1', "Lunes2", "Lunes3", "Lunes4", "Martes1", "Martes2", "Martes3", "Martes4",
@@ -687,7 +796,7 @@ laboratorios_df=pd.read_excel(file, sheet_name="Laboratorios", header=0, index_c
 
 #Ejecutamos el algoritmo genético
 main()
-
+#evaluator2((0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0,0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0))
 
 
 
