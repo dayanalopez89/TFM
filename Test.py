@@ -4,6 +4,8 @@ import numpy as np
 import pandas as pd
 from deap import algorithms, base, creator, tools
 import multiprocessing
+from time import time
+from openpyxl import load_workbook
 import matplotlib.pyplot as plt
 
 ################################################################################
@@ -117,7 +119,12 @@ def evaluator2(individual):
         j+=(len(dict_ev[k])*20)
     #print("suma resultado: ", result)
     #print("FEASIBILITY: ", check_feasibility(individual))
-    result =result+ 10*check_feasibility(individual)
+    restricciones=check_feasibility(individual)
+    vector_restricciones.append(restricciones)
+    #if restricciones==0:
+    #    print(" %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% RESTRICCIONES = 0 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
+
+    result =result+ 10*restricciones
     #print("RESULTADO FINAL: ", result)
     return (result, )
 
@@ -459,7 +466,7 @@ def datos_curso():
     #Necesario modificar también el diccionario de horas semanales
     #Lo modificamos haciendo un replace cuando se introducen los datos. En caso de que exista una X,
     #la reemplazará por un 3
-    print("HORAS SEMANALES", dict_horassemanales)
+    #print("HORAS SEMANALES", dict_horassemanales)
 
 #print("GRUPOS 42: ", grupos_42)
 #print(dict_asignaturas["Primer cuatrimestre"])
@@ -470,6 +477,7 @@ def datos_curso():
 
 
 ##################################################################################
+
 #FUNCIÓN DE COMPROBACIÓN DE RESTRICCIONES
 def check_feasibility(individual):
     # Esta función sirve para comprobar si el individuo
@@ -506,7 +514,6 @@ def check_feasibility(individual):
     suma_diagonal_inf=sum(values[np.tril_indices(values.shape[0], -1)])
     penalty+=suma_diagonal_inf
     #print("SUMA DIAGONAL: ", suma_diagonal_inf)
-
     ###############
     # #MÉTODO LENTO
     # #penalty_lento=0
@@ -540,8 +547,11 @@ def check_feasibility(individual):
 ################################################################################
 #ALGORITMO GENÉTICO
 
-def main():
 
+def main(filename):
+
+    time_inicio_algoritmo = time()
+    vector_resultados=[]
     if __name__ == "__main__":
         #Consideramos la función de fitness como FitnessMin y creamos los individuales como listas
         creator.create("FitnessMin", base.Fitness, weights=(-1.0,))
@@ -579,8 +589,9 @@ def main():
         toolbox.register("select", tools.selTournament, tournsize=3)
 
         # Creamos la población
-        pop = toolbox.population(n=10000)
-        hof = tools.HallOfFame(1, similar=np.array_equal)
+        m=10
+        pop = toolbox.population(n=IND_SIZE*m)
+        hof = tools.HallOfFame(20, similar=np.array_equal)
         fitnesses = list(map(toolbox.evaluate, pop))
         for ind, fit in zip(pop, fitnesses):
             ind.fitness.values = fit
@@ -597,7 +608,7 @@ def main():
         # g=variable que cuenta el número de iteraciones realizadas
         g = 0
         # Comienza la evolución
-        while min(fits) > 0 and g < 100:
+        while min(fits) > 0 and g < 75:
             # A new generation
             g = g + 1
             print("-- Generation %i --" % g)
@@ -633,16 +644,35 @@ def main():
             # Se evalúa la solución
             fits = [ind.fitness.values[0] for ind in pop]
 
-            # length = len(pop)
-            # mean = sum(fits) / length
-            # sum2 = sum(x * x for x in fits)
-            # std = abs(sum2 / length - mean ** 2) ** 0.5
-
+            #Resultados fitness
+            #length = len(pop)
+            #mean = sum(fits) / length
+            #sum2 = sum(x * x for x in fits)
+            #std = abs(sum2 / length - mean ** 2) ** 0.5
+            #f_order=sorted(fits)
+            #if (length/2)%2==0:
+             #   f_mediana=(f_order[(length/2)+1]+f_order[(length/2)+2])/2
+            #else:
+            #    f_mediana=f_order[(length/2)+1]
+            f_cuartil25, f_mediana, f_cuartil75 = np.percentile(fits, [25, 50, 75])
+            #Resultados restricciones
+            #length_restr=len(vector_restricciones)
+            #r_order=sorted(vector_restricciones)
+            #if(length_restr/2)%2==0:
+            #    r_mediana=(r_order[(length_restr/2)+1]+r_order[(length_restr/2)+2])/2
+            #else:
+            #    r_mediana=r_order[(length_restr/2)+1]
+            r_cuartil25, r_mediana, r_cuartil75=np.percentile(vector_restricciones, [25, 50, 75])
+            #restricciones=sum(x for x in vector_restricciones)/len(vector_restricciones)
+            vector_resultados.append([min(fits), max(fits), f_mediana, f_cuartil25, f_cuartil75, min(vector_restricciones),
+                                      max(vector_restricciones), r_mediana, r_cuartil25, r_cuartil75])
             print("  Min %s" % min(fits))
             #fbest[g] = hof[0].fitness.values
-            # print("  Max %s" % max(fits))
-            # print("  Avg %s" % mean)
-            # print("  Std %s" % std)
+            #print("  Max %s" % max(fits))
+            #print("  Avg %s" % mean)
+            #print("  Std %s" % std)
+            #print("  Restricciones %s" % restricciones)
+
 
         #x = list(range(0, 100))
         #logbook = tools.Logbook()
@@ -659,18 +689,63 @@ def main():
         #plt.show()
 
 
-        if list(hof[0])!=None:
+        #if list(hof[0])!=None:
             # Almacenamos la mejor solución en un excel para realizar comprobaciones
-            print(list(hof[0]))
-            df = pd.DataFrame(data=np.reshape(list(hof[0]), (tam, 20)),
-                              columns=bloques, index=asignaturas)
-            out_file = "solucion.xlsx"
-            df.to_excel(out_file, index=True)
+        #    print(list(hof[0]))
+        #    print(list(hof))
+        #    df = pd.DataFrame(data=np.reshape(list(hof[0]), (tam, 20)),
+        #                      columns=bloques, index=asignaturas)
+        #    out_file = "solucion.xlsx"
+         #   df.to_excel(out_file, index=True)
 
-        return hof
+        time_final=time()
+        #df = pd.DataFrame(data=vector_resultados,
+         #                 columns=["Min Fitness", "Max Fitness", "Mediana Fitness","Cuartil 25 Fitness", "Cuartil 75 Fitness",
+         #                          "Min Restricciones", "Max Restricciones", "Mediana Restricciones", "Cuartil 25 Restricciones", "Cuartil 75 Restricciones"])
+        #df.to_excel("C:\\Users\\tr5568\\Desktop\\DAYANA\\PERSONAL\\" \
+     #"MÁSTER INGENIERÍA COMPUTACIONAL Y SISTEMAS INTELIGENTES\\TFM\\"+asignaturas[1]+"numpruebas_"+str(m)+".xlsx", index=False)
+        print("Tiempo ejecución algoritmo: ", time_final-time_inicio_algoritmo)
+
+        df_result = pd.DataFrame(data=vector_resultados,
+                                 columns=["Min Fitness", "Max Fitness", "Mediana Fitness", "Cuartil 25 Fitness",
+                                          "Cuartil 75 Fitness",
+                                          "Min Restricciones", "Max Restricciones", "Mediana Restricciones",
+                                          "Cuartil 25 Restricciones", "Cuartil 75 Restricciones"])
 
 
+        vector_i = [[ind, evaluator2(ind), check_feasibility(ind)] for ind in list(hof)]
 
+        df_ind = pd.DataFrame(data=vector_i, columns=["Individuo", "Fitness", "Restricciones incumplidas"])
+
+        df_t = pd.DataFrame(data=[time_final-time_inicio_algoritmo], columns=["Tiempo ejecución"])
+
+        #Primero creamos la primera hoja del excel
+        #df_result.to_excel("C:\\Users\\tr5568\\Desktop\\DAYANA\\PERSONAL\\" \
+        #                "MÁSTER INGENIERÍA COMPUTACIONAL Y SISTEMAS INTELIGENTES\\TFM\\Resultados_11_Pop10.xlsx",
+          #                 sheet_name="Resultados", index=False)
+        df_result.to_excel(filename,
+                           sheet_name="Resultados", index=False)
+        #Una vez creado, lo cargamos para continuar escribiendo
+        #book=load_workbook("C:\\Users\\tr5568\\Desktop\\DAYANA\\PERSONAL\\MÁSTER INGENIERÍA COMPUTACIONAL Y SISTEMAS INTELIGENTES\\TFM\\Resultados_11_Pop10.xlsx")
+        #writer = pd.ExcelWriter("C:\\Users\\tr5568\\Desktop\\DAYANA\\PERSONAL\\" \
+                       # "MÁSTER INGENIERÍA COMPUTACIONAL Y SISTEMAS INTELIGENTES\\TFM\\Resultados_11_Pop10.xlsx", engine='openpyxl')
+        book=load_workbook(filename)
+        writer = pd.ExcelWriter(filename, engine='openpyxl')
+
+        writer.book = book
+        writer.sheets = dict((ws.title, ws) for ws in book.worksheets)
+
+        #Continuamos escribiendo
+        df_ind.to_excel(writer,
+                        sheet_name="Mejores individuos", index=False)
+        writer.save()
+        df_t.to_excel(writer,
+                      sheet_name="Tiempo ejecución", index=False)
+        writer.save()
+        #return hof, vector_resultados, time_final-time_inicio_algoritmo
+
+
+#time_inicio=time()
 ###################################################################################
 #LEER ARCHIVOS CON DATOS DE ENTRADA
 #Leemos el archivo excel
@@ -680,6 +755,9 @@ file="C:\\Users\\tr5568\\Desktop\\DAYANA\\PERSONAL\\" \
 read_file=xlrd.open_workbook(file)
 sheet=read_file.sheet_by_name("Asignaturas y Grupos")
 dict_asignaturas={}
+vector_resultados=[]
+vector_restricciones=[]
+df_result=pd.DataFrame()
 #vector_es=[]
 #vector_eu=[]
 #vector_en=[]
@@ -705,23 +783,23 @@ datos_curso()
 #Caso de diccionario por curso, idioma, cuatrimestre
 #tam=len(dict_asignaturas[2, "Primer cuatrimestre", "ES"])+len(dict_asignaturas[2, "Primer cuatrimestre", "EU"])+\
     #len(dict_asignaturas[2, "Primer cuatrimestre", "EN"])
-tam=len(dict_asignaturas[1, "Primer cuatrimestre", "ES"])+len(dict_asignaturas[1, "Primer cuatrimestre", "EU"])+\
-    len(dict_asignaturas[2, "Primer cuatrimestre", "ES"])+len(dict_asignaturas[2, "Primer cuatrimestre", "EU"])+len(dict_asignaturas[2, "Primer cuatrimestre", "EN"])+\
-    len(dict_asignaturas[3, "Primer cuatrimestre", "ES"])+len(dict_asignaturas[3, "Primer cuatrimestre", "EU"])
-#tam=len(dict_asignaturas[2, "Primer cuatrimestre", "ES"])+len(dict_asignaturas[2, "Primer cuatrimestre", "EU"])+len(dict_asignaturas[2, "Primer cuatrimestre", "EN"])
+tam=len(dict_asignaturas[1, "Primer cuatrimestre", "ES"])+len(dict_asignaturas[1, "Primer cuatrimestre", "EU"])
+  #  len(dict_asignaturas[2, "Primer cuatrimestre", "ES"])+len(dict_asignaturas[2, "Primer cuatrimestre", "EU"])+len(dict_asignaturas[2, "Primer cuatrimestre", "EN"])
+    #len(dict_asignaturas[3, "Primer cuatrimestre", "ES"])+len(dict_asignaturas[3, "Primer cuatrimestre", "EU"])
+#tam=len(dict_asignaturas[3, "Primer cuatrimestre", "ES"])+len(dict_asignaturas[3, "Primer cuatrimestre", "EU"])
 dict_ev={}
 dict_ev[1, "Primer cuatrimestre", "ES"]=dict_asignaturas[1, "Primer cuatrimestre", "ES"]
 dict_ev[1, "Primer cuatrimestre", "EU"]=dict_asignaturas[1, "Primer cuatrimestre", "EU"]
-dict_ev[2, "Primer cuatrimestre", "ES"]=dict_asignaturas[2, "Primer cuatrimestre", "ES"]
-dict_ev[2, "Primer cuatrimestre", "EU"]=dict_asignaturas[2, "Primer cuatrimestre", "EU"]
-dict_ev[2, "Primer cuatrimestre", "EN"]=dict_asignaturas[2, "Primer cuatrimestre", "EN"]
-dict_ev[3, "Primer cuatrimestre", "ES"]=dict_asignaturas[3, "Primer cuatrimestre", "ES"]
-dict_ev[3, "Primer cuatrimestre", "EU"]=dict_asignaturas[3, "Primer cuatrimestre", "EU"]
+#dict_ev[2, "Primer cuatrimestre", "ES"]=dict_asignaturas[2, "Primer cuatrimestre", "ES"]
+#dict_ev[2, "Primer cuatrimestre", "EU"]=dict_asignaturas[2, "Primer cuatrimestre", "EU"]
+#dict_ev[2, "Primer cuatrimestre", "EN"]=dict_asignaturas[2, "Primer cuatrimestre", "EN"]
+#dict_ev[3, "Primer cuatrimestre", "ES"]=dict_asignaturas[3, "Primer cuatrimestre", "ES"]
+#dict_ev[3, "Primer cuatrimestre", "EU"]=dict_asignaturas[3, "Primer cuatrimestre", "EU"]
 
 #print(dict_ev)
-asignaturas=dict_asignaturas[1, "Primer cuatrimestre", "ES"]+dict_asignaturas[1, "Primer cuatrimestre", "EU"]+\
-           dict_asignaturas[2, "Primer cuatrimestre", "ES"]+dict_asignaturas[2, "Primer cuatrimestre", "EU"]+dict_asignaturas[2, "Primer cuatrimestre", "EN"]+\
-            dict_asignaturas[3, "Primer cuatrimestre", "ES"]+dict_asignaturas[3, "Primer cuatrimestre", "EU"]
+#asignaturas=dict_asignaturas[1, "Primer cuatrimestre", "ES"]+dict_asignaturas[1, "Primer cuatrimestre", "EU"]+\
+           #dict_asignaturas[2, "Primer cuatrimestre", "ES"]+dict_asignaturas[2, "Primer cuatrimestre", "EU"]+dict_asignaturas[2, "Primer cuatrimestre", "EN"]
+asignaturas = dict_asignaturas[1, "Primer cuatrimestre", "ES"]+dict_asignaturas[1, "Primer cuatrimestre", "EU"]
 #asignaturas=dict_asignaturas[2, "Primer cuatrimestre", "ES"]+dict_asignaturas[2, "Primer cuatrimestre", "EU"]+dict_asignaturas[2, "Primer cuatrimestre", "EN"]
 #asignaturas=dict_asignaturas[2, "Primer cuatrimestre", "ES"]+dict_asignaturas[2, "Primer cuatrimestre", "EU"]+\
                 #dict_asignaturas[2, "Primer cuatrimestre", "EN"]
@@ -794,9 +872,40 @@ for col in incomp_df:
 laboratorios_df=pd.read_excel(file, sheet_name="Laboratorios", header=0, index_col=False)
 #print(laboratorios_df)
 
-#Ejecutamos el algoritmo genético
-main()
+#time_inicio_algoritmo=0
+#time_final=0
+#Ejecutamos el algoritmo genético 10 veces
+i=0
+while i<1:
+    vector_resultados = []
+    vector_restricciones = []
+    #print(" ------ EJECUCIÓN NÚMERO ", i, "  ------")
+    main("C:\\Users\\tr5568\\Desktop\\DAYANA\\PERSONAL\\" \
+                       "MÁSTER INGENIERÍA COMPUTACIONAL Y SISTEMAS INTELIGENTES\\TFM\\RESULTADOS\\Resultados_Prueba_"+str(i)+".xlsx")
+    i+=1
+
+
+#Guardamos los resultados obtenidos
+# df_result = pd.DataFrame(data=vector_resultados,
+#       columns=["Min Fitness", "Max Fitness", "Mediana Fitness","Cuartil 25 Fitness", "Cuartil 75 Fitness",
+#                "Min Restricciones", "Max Restricciones", "Mediana Restricciones", "Cuartil 25 Restricciones", "Cuartil 75 Restricciones"])
+#
+# vector_i=[[ind, evaluator2(ind), check_feasibility(ind)] for ind in enumerate(hof)]
+#
+# df_ind=pd.DataFrame(data=vector_i, columns=["Individuo", "Fitness", "Restricciones incumplidas"])
+#
+# df_t=pd.DataFrame(data=[tiempo_ejecucion], columns=["Tiempo ejecución"])
+# df_result.to_excel("C:\\Users\\tr5568\\Desktop\\DAYANA\\PERSONAL\\" \
+# "MÁSTER INGENIERÍA COMPUTACIONAL Y SISTEMAS INTELIGENTES\\TFM\\Resultados_11_Pop10.xlsx", sheet_name="Resultados",index=False)
+#
+# df_ind.to_excel("C:\\Users\\tr5568\\Desktop\\DAYANA\\PERSONAL\\" \
+# "MÁSTER INGENIERÍA COMPUTACIONAL Y SISTEMAS INTELIGENTES\\TFM\\Resultados_11_Pop10.xlsx", sheet_name="Mejores individuos",index=False)
+#
+# df_t.to_excel("C:\\Users\\tr5568\\Desktop\\DAYANA\\PERSONAL\\" \
+# "MÁSTER INGENIERÍA COMPUTACIONAL Y SISTEMAS INTELIGENTES\\TFM\\Resultados_11_Pop10.xlsx", sheet_name="Tiempo ejecución",index=False)
+
 #evaluator2((0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0,0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0))
+#time_final=time()
 
 
 
