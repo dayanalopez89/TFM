@@ -2,26 +2,78 @@
 
 import matplotlib.pyplot as plt
 import xlrd
+import pandas as pd
+import numpy as np
+
 
 #Leemos el archivo excel
-file="C:\\Users\\tr5568\\Desktop\\DAYANA\\PERSONAL\\" \
-     "MÁSTER INGENIERÍA COMPUTACIONAL Y SISTEMAS INTELIGENTES\\TFM\\RESULTADOS\\Resultados_Prueba_0.xlsx"
-#We want the sheet called Data
-read_file=xlrd.open_workbook(file)
-sheet=read_file.sheet_by_name("Resultados")
-fitness_min=[]
+file_name1="C:\\Users\\tr5568\\Desktop\\DAYANA\\PERSONAL\\" \
+     "MÁSTER INGENIERÍA COMPUTACIONAL Y SISTEMAS INTELIGENTES\\TFM\\RESULTADOS\\" \
+           "Resultados iniciales 1 curso 1 cuatri\\Resultados_11_Pop10_"
+file_name2=".xlsx"
+#Creamos los dataframes para almacenar la información
+df_mediana=pd.DataFrame()
+df_cuartil25=pd.DataFrame()
+df_cuartil75=pd.DataFrame()
 
-for row in range(2,sheet.nrows):
-    fitness_min.append(sheet.cell(row, 0).value)
+#Leemos los 10 excel
+for i in range(0,10):
+    f_name=file_name1+str(i)+file_name2
+    read_file=xlrd.open_workbook(f_name)
+    sheet=read_file.sheet_by_name("Resultados")
+    fitness_min=[]
+    mediana=[]
+    cuartil_25=[]
+    cuartil_75=[]
+
+    #Almacemos la info que queremos dibujar
+    for row in range(1,sheet.nrows):
+        fitness_min.append(sheet.cell(row, 0).value)
+        mediana.append(sheet.cell(row, 2).value)
+        cuartil_25.append(sheet.cell(row, 3).value)
+        cuartil_75.append(sheet.cell(row, 4).value)
+
+    #Generamos los dataframes
+    col_name="Generación "+str(i)
+    df_mediana[col_name]=mediana
+    df_cuartil25[col_name]=cuartil_25
+    df_cuartil75[col_name]=cuartil_75
+
+#Realizamos la media de las 10 ejecuciones
+#La columna df_mediana["media"] será la que vamos a dibujar
+#print(df_mediana)
+#Mediana
+df_mediana["media"]=df_mediana.sum(axis=1)
+df_mediana["media"]=df_mediana["media"]/10
+#Cuartil 25
+df_cuartil25["media"]=df_cuartil25.sum(axis=1)
+df_cuartil25["media"]=df_cuartil25["media"]/10
+#Cuartil 75
+df_cuartil75["media"]=df_cuartil75.sum(axis=1)
+df_cuartil75["media"]=df_cuartil75["media"]/10
+#print(df_mediana["media"])
 
 #Dibujamos
-plt.plot(fitness_min)
+
+plt.figure()
+plt.plot(df_mediana["media"], "mediumblue")
+plt.plot(df_cuartil25["media"], "cornflowerblue", df_cuartil75["media"], "cornflowerblue")
 plt.xlabel("Generaciones")
 plt.ylabel("Fitness min")
+x=np.arange(0, 75)
+plt.fill_between(x, df_cuartil25["media"], df_cuartil75["media"], color="cornflowerblue")
 
+
+# Añado leyenda, tamaño de letra 10, en esquina superior derecha
+plt.legend(('Mediana', 'Cuartil 25', 'Cuartil 75'),
+prop = {'size': 10}, loc='upper right')
+
+#Añado un título a la figura
+plt.title("Resultados 1º curso 1º cuatri (n=10)")
 #Mostramos la figura
 #plt.show()
 
 #Guardamos la figura
-plt.savefig("C:\\Users\\tr5568\\Desktop\\DAYANA\\PERSONAL\\" \
-     "MÁSTER INGENIERÍA COMPUTACIONAL Y SISTEMAS INTELIGENTES\\TFM\\FIGURAS\\Resultados_Prueba_0.jpg")
+fig_name="C:\\Users\\tr5568\\Desktop\\DAYANA\\PERSONAL\\" \
+    "MÁSTER INGENIERÍA COMPUTACIONAL Y SISTEMAS INTELIGENTES\\TFM\\FIGURAS\\Resultados_11_Pop10_"+str(i)+".jpg"
+plt.savefig(fig_name)
