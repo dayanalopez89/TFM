@@ -15,6 +15,7 @@ file_name2=".xlsx"
 df_mediana=pd.DataFrame()
 df_cuartil25=pd.DataFrame()
 df_cuartil75=pd.DataFrame()
+tiempo_ejecucion=[]
 
 #Leemos los 10 excel
 for i in range(0,10):
@@ -39,6 +40,10 @@ for i in range(0,10):
     df_cuartil25[col_name]=cuartil_25
     df_cuartil75[col_name]=cuartil_75
 
+    sheet1=read_file.sheet_by_name("Tiempo ejecución")
+
+    tiempo_ejecucion.append(sheet1.cell(1,0).value)
+
 #Realizamos la media de las 10 ejecuciones
 #La columna df_mediana["media"] será la que vamos a dibujar
 #print(df_mediana)
@@ -53,6 +58,10 @@ df_cuartil75["media"]=df_cuartil75.sum(axis=1)
 df_cuartil75["media"]=df_cuartil75["media"]/10
 #print(df_mediana["media"])
 
+#Cálculo del tiempo medio de ejecución
+media_tiempo_ejec=sum(tiempo_ejecucion)/10
+#print("TIEMPOS DE EJECUCIÓN: ", tiempo_ejecucion)
+#print("MEDIA DEL TIEMPO DE EJECUCIÓN: ", media_tiempo_ejec)
 #Dibujamos
 
 plt.figure()
@@ -69,11 +78,11 @@ plt.legend(('Mediana', 'Cuartil 25', 'Cuartil 75'),
 prop = {'size': 10}, loc='upper right')
 
 #Añado un título a la figura
-plt.title("Resultados 1º curso 1º cuatri (n=10)")
+plt.title("Resultados 1º, 2º y 3º curso 1º cuatri (n=10)")
 #Mostramos la figura
 #plt.show()
 
 #Guardamos la figura
-fig_name="C:\\Users\\tr5568\\Desktop\\DAYANA\\PERSONAL\\" \
-    "MÁSTER INGENIERÍA COMPUTACIONAL Y SISTEMAS INTELIGENTES\\TFM\\FIGURAS\\Resultados_11_Pop10_"+str(i)+".jpg"
-plt.savefig(fig_name)
+#fig_name="C:\\Users\\tr5568\\Desktop\\DAYANA\\PERSONAL\\" \
+    #"MÁSTER INGENIERÍA COMPUTACIONAL Y SISTEMAS INTELIGENTES\\TFM\\FIGURAS\\Resultados_11y21y31_Pop10.jpg"
+#plt.savefig(fig_name)

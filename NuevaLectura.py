@@ -146,5 +146,5 @@ file="C:\\Users\\tr5568\\Desktop\\DAYANA\\PERSONAL\\" \
      "MÁSTER INGENIERÍA COMPUTACIONAL Y SISTEMAS INTELIGENTES\\TFM\\AsignaturasGruposProfesorado-20200702-Dayana.xlsx"
 asign, horas, profes= lectura_datos_excel(file)
 
-print(asign[3, 1, "ES"])
+#print(asign[3, 1, "ES"])
 #print(profes["26011-GL02ES-11"])
