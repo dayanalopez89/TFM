@@ -11,6 +11,22 @@ import matplotlib.pyplot as plt
 from NuevaLectura import lectura_datos_excel
 
 ################################################################################
+#FUNCIÓN DE CONSTRUCCIÓN DE INDIVIDUOS
+def individual_creator(n):
+    aux=0
+    individual=[]
+    for i in range(0,n):
+        choice=get_choice()
+        if choice==1:
+            aux+=1
+            if aux>(n*2/20):
+                choice=0
+        individual.append(choice)
+        return individual
+
+
+
+################################################################################
 #FUNCIÓN DE MUTACIÓN
 def mutation(population):
     mut=0
@@ -41,7 +57,7 @@ def mate(ind1, ind2):
     return ind1, ind2
 
 ################################################################################
-#FUNCIÓN PARA RELLENAR CON CIERTA PROBABILIDAD EL INDIVIDUO
+#FUNCIÓN PARA GENERAR EL INDIVIDUO
 def get_choice():
     f=2/20
     if random.random() <=f:
