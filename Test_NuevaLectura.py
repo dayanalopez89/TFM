@@ -7,19 +7,20 @@ import multiprocessing
 from time import time
 from openpyxl import load_workbook
 import matplotlib.pyplot as plt
+import array
 
 from NuevaLectura import lectura_datos_excel
 
 ################################################################################
 #FUNCIÓN DE CONSTRUCCIÓN DE INDIVIDUOS
-def individual_creator(n):
+def individual_creator(number):
     aux=0
     individual=[]
-    for i in range(0,n):
+    for i in range(0,number):
         choice=get_choice()
         if choice==1:
             aux+=1
-            if aux>(n*2/20):
+            if aux>(number*2/20):
                 choice=0
         individual.append(choice)
         return individual
@@ -576,6 +577,7 @@ def main(filename):
         #Consideramos la función de fitness como FitnessMin y creamos los individuales como listas
         creator.create("FitnessMin", base.Fitness, weights=(-1.0,))
         creator.create("Individual", list, fitness=creator.FitnessMin)
+        #creator.create("Individual", array.array, fitness=creator.FitnessMin)
 
         #Existen 21 grupos en el primer curso del primer cuatrimestre, en español.
 
@@ -591,9 +593,12 @@ def main(filename):
         toolbox = base.Toolbox()
 
         #toolbox.register("attr_bool", random.randint, 0, 1)
-        toolbox.register("attr_bool", get_choice)
-        toolbox.register("individual", tools.initRepeat, creator.Individual,
-                     toolbox.attr_bool, n=IND_SIZE)
+        #Usamos attr_bool proque nos genera 1 o 0 con cierta probabilidad
+        #Ahora queremos utilizar una función concreta para generar el individuo completo
+        #toolbox.register("attr_bool", get_choice)
+        #toolbox.register("individual", tools.initRepeat, creator.Individual,
+        #                 toolbox.attr_bool, n=IND_SIZE)
+        toolbox.register("individual", individual_creator(IND_SIZE), creator.Individual)
         toolbox.register("population", tools.initRepeat, list, toolbox.individual)
 
         #Para varios procesadores
@@ -938,7 +943,7 @@ for col in incomp_df:
         if idioma_aux!=idioma:
             incomp_df.at[indice_fila, col] = 0
 
-print(incomp_df.loc[:,"26212-GA01EU-32-3C"])
+#print(incomp_df.loc[:,"26212-GA01EU-32-3C"])
 
 #print(dict_horassemanales)
 #print(dict_asignaturas[1, "Primer cuatrimestre", "ES"])
@@ -951,6 +956,7 @@ laboratorios_df=pd.read_excel(file, sheet_name="LAboratorios", header=0, index_c
 
 #time_inicio_algoritmo=0
 #time_final=0
+main("C:\\Users\\tr5568\\Desktop\\DAYANA\\PERSONAL\\MÁSTER INGENIERÍA COMPUTACIONAL Y SISTEMAS INTELIGENTES\\TFM\\RESULTADOS\\Prueba.xlsx")
 ###########################################################################################################
 #EJECUTAMOS EL ALGORITMO GENÉTICO
 ###########################################################################################################
