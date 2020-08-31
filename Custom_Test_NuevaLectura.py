@@ -13,18 +13,27 @@ from NuevaLectura import lectura_datos_excel
 
 ################################################################################
 #FUNCIÓN DE CONSTRUCCIÓN DE INDIVIDUOS
-def individual_creator(n):
+def individual_creator(size):
     aux=0
     individual=[]
     #print("IND_SIZE", str(n))
-    for i in range(0, n):
+    for i in range(0, size):
         choice=get_choice()
         if choice==1:
             aux+=1
-            if aux>(n * 2 / 20):
+            if aux>(size * 2 / 20):
                 choice=0
         individual.append(choice)
     return individual
+
+################################################################################
+#FUNCIÓN DE CONSTRUCCIÓN DE POBLACIÓN
+def population_creator(creator, n, size):
+    pop=[]
+    for i in range(n):
+        ind=creator(individual_creator(size))
+        pop.append(ind)
+    return pop
 
 
 
@@ -596,13 +605,11 @@ def main(filename):
         #toolbox.register("attr_bool", random.randint, 0, 1)
         #Usamos attr_bool proque nos genera 1 o 0 con cierta probabilidad
         #Ahora queremos utilizar una función concreta para generar el individuo completo
-        toolbox.register("attr_bool", get_choice)
-        toolbox.register("individual", tools.initRepeat, creator.Individual,
-                         toolbox.attr_bool, n=IND_SIZE)
-
-        #Método para crear individuos personalizados
+        #toolbox.register("attr_bool", get_choice)
+        #toolbox.register("individual", tools.initRepeat, creator.Individual,
+        #                 toolbox.attr_bool, n=IND_SIZE)
         #toolbox.register("individual", individual_creator, creator.Individual, n=IND_SIZE)
-        toolbox.register("population", tools.initRepeat, list, toolbox.individual)
+        toolbox.register("population", population_creator, creator.Individual, size=IND_SIZE)
 
         #Para varios procesadores
         pool=multiprocessing.Pool(processes=3)
@@ -622,6 +629,8 @@ def main(filename):
         #############################################################
         m=10
         pop = toolbox.population(n=IND_SIZE*m)
+        print("POPULATION: ", pop)
+        print("POPULATION SIZE: ", len(pop))
         hof = tools.HallOfFame(20, similar=np.array_equal)
         fitnesses = list(map(toolbox.evaluate, pop))
         for ind, fit in zip(pop, fitnesses):
