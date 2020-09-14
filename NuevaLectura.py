@@ -142,9 +142,9 @@ def lectura_datos_excel(file):
     #print(dict_horas)
     return dict_asignaturas, dict_horas, dict_profesores
 
-file="C:\\Users\\tr5568\\Desktop\\DAYANA\\PERSONAL\\" \
-     "MÁSTER INGENIERÍA COMPUTACIONAL Y SISTEMAS INTELIGENTES\\TFM\\AsignaturasGruposProfesorado-20200702-Dayana.xlsx"
-asign, horas, profes= lectura_datos_excel(file)
+#file="C:\\Users\\tr5568\\OneDrive - Axalta\\Desktop\\DAYANA\\PERSONAL\\" \
+     #"MÁSTER INGENIERÍA COMPUTACIONAL Y SISTEMAS INTELIGENTES\\TFM\\AsignaturasGruposProfesorado-20200702-Dayana.xlsx"
+#asign, horas, profes= lectura_datos_excel(file)
 
 #print(asign[3, 1, "ES"])
 #print(profes["26011-GL02ES-11"])

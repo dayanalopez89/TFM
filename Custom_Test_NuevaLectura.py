@@ -10,6 +10,8 @@ import matplotlib.pyplot as plt
 import array
 
 from NuevaLectura import lectura_datos_excel
+from Custom_Ind_Creator import indiv_creator_permut
+from Custom_Mutation import custom_mutation
 
 ################################################################################
 #FUNCIÓN DE CONSTRUCCIÓN DE INDIVIDUOS
@@ -28,20 +30,30 @@ def individual_creator(size):
 
 ################################################################################
 #FUNCIÓN DE CONSTRUCCIÓN DE POBLACIÓN
-def population_creator(creator, n, size):
-    pop=[]
+#n=individuos dentro de la población
+#size=número de grupos existentes
+def population_creator(creator, n, size, asignaturas, horas_semanales):
+    pop = []
+    vector_total=[]
+    # print(n)
+    for a in asignaturas:
+        if(horas_semanales[a]==1):
+            v = [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+            vector_total.extend(v)
+        else:
+            v = [1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+            vector_total.extend(v)
     for i in range(n):
-        ind=creator(individual_creator(size))
+        #print(i)
+        #asign = asignaturas[i]
+        #print(asign)
+        #horas = horas_semanales[asign]
+        ind = creator(indiv_creator_permut(size, vector_total))
+        # print(ind)
+        # print(len(ind))
         pop.append(ind)
     return pop
 
-
-
-################################################################################
-#FUNCIÓN DE MUTACIÓN
-def mutation(population):
-    mut=0
-    return mut
 
 ################################################################################
 #FUNCIÓN DE CROSSOVER
@@ -68,7 +80,7 @@ def mate(ind1, ind2):
     return ind1, ind2
 
 ################################################################################
-#FUNCIÓN PARA GENERAR EL INDIVIDUO
+#FUNCIÓN PARA ESCOGER EL GEN DENTRO DEL INDIVIDUO
 def get_choice():
     f=2/20
     if random.random() <=f:
@@ -574,11 +586,8 @@ def check_feasibility(individual):
     return penalty
 
 
-
 ################################################################################
 #ALGORITMO GENÉTICO
-
-
 def main(filename):
 
     time_inicio_algoritmo = time()
@@ -609,7 +618,9 @@ def main(filename):
         #toolbox.register("individual", tools.initRepeat, creator.Individual,
         #                 toolbox.attr_bool, n=IND_SIZE)
         #toolbox.register("individual", individual_creator, creator.Individual, n=IND_SIZE)
-        toolbox.register("population", population_creator, creator.Individual, size=IND_SIZE)
+        toolbox.register("population", population_creator, creator.Individual, size=tam,
+                         asignaturas=asignaturas, horas_semanales=dict_horassemanales)
+
 
         #Para varios procesadores
         pool=multiprocessing.Pool(processes=3)
@@ -620,7 +631,7 @@ def main(filename):
         #toolbox.decorate("evaluate", tools.DeltaPenalty(check_feasibility, 20000))
         #toolbox.register("mate", tools.cxOnePoint)
         toolbox.register("mate", mate)
-        toolbox.register("mutate", tools.mutFlipBit, indpb=0.05)
+        toolbox.register("mutate", custom_mutation)
         toolbox.register("select", tools.selTournament, tournsize=3)
 
         # Creamos la población
@@ -629,8 +640,9 @@ def main(filename):
         #############################################################
         m=10
         pop = toolbox.population(n=IND_SIZE*m)
-        print("POPULATION: ", pop)
+        #print("POPULATION: ", pop)
         print("POPULATION SIZE: ", len(pop))
+        print("IND SIZE: ", IND_SIZE)
         hof = tools.HallOfFame(20, similar=np.array_equal)
         fitnesses = list(map(toolbox.evaluate, pop))
         for ind, fit in zip(pop, fitnesses):
@@ -796,7 +808,7 @@ def main(filename):
 #sheet=read_file.sheet_by_name("Asignaturas y Grupos")
 
 #Leemos el archivo excel (versión nueva)
-file="C:\\Users\\tr5568\\Desktop\\DAYANA\\PERSONAL\\" \
+file="C:\\Users\\tr5568\\OneDrive - Axalta\\Desktop\\DAYANA\\PERSONAL\\" \
      "MÁSTER INGENIERÍA COMPUTACIONAL Y SISTEMAS INTELIGENTES\\TFM\\AsignaturasGruposProfesorado-20200702-Dayana.xlsx"
 
 dict_asignaturas={}
@@ -847,7 +859,8 @@ dict_asignaturas, dict_horassemanales, dict_profes=lectura_datos_excel(file)
 #tam=len(dict_asignaturas[3, "Primer cuatrimestre", "ES"])+len(dict_asignaturas[3, "Primer cuatrimestre", "EU"])
 
 #Versión nueva lectura
-tam=len(dict_asignaturas[3, 2, "ES"])+len(dict_asignaturas[3, 2, "EU"])
+tam=len(dict_asignaturas[1, 1, "ES"])+len(dict_asignaturas[1, 1, "EU"])
+#print("TAM: ", tam)
 
 #Versión antigua lectura
 # dict_ev={}
@@ -861,8 +874,8 @@ tam=len(dict_asignaturas[3, 2, "ES"])+len(dict_asignaturas[3, 2, "EU"])
 
 #Versión nueva lectura
 dict_ev={}
-dict_ev[3, 2, "ES"]=dict_asignaturas[3, 2, "ES"]
-dict_ev[3, 2, "EU"]=dict_asignaturas[3, 2, "EU"]
+dict_ev[1, 1, "ES"]=dict_asignaturas[1, 1, "ES"]
+dict_ev[1, 1, "EU"]=dict_asignaturas[1, 1, "EU"]
 
 #Versión lectura antigua
 #print(dict_ev)
@@ -872,7 +885,7 @@ dict_ev[3, 2, "EU"]=dict_asignaturas[3, 2, "EU"]
  #dict_asignaturas[2, "Primer cuatrimestre", "ES"]+dict_asignaturas[2, "Primer cuatrimestre", "EU"]+dict_asignaturas[2, "Primer cuatrimestre", "EN"]
 
 #Versión nueva lectura
-asignaturas = dict_asignaturas[3, 2, "ES"]+dict_asignaturas[3, 2, "EU"]
+asignaturas = dict_asignaturas[1, 1, "ES"]+dict_asignaturas[1, 1, "EU"]
 
 
 #print(dict_ev)
@@ -968,7 +981,8 @@ laboratorios_df=pd.read_excel(file, sheet_name="LAboratorios", header=0, index_c
 
 #time_inicio_algoritmo=0
 #time_final=0
-main("C:\\Users\\tr5568\\Desktop\\DAYANA\\PERSONAL\\MÁSTER INGENIERÍA COMPUTACIONAL Y SISTEMAS INTELIGENTES\\TFM\\RESULTADOS\\Prueba.xlsx")
+main("C:\\Users\\tr5568\\OneDrive - Axalta\\"\
+     "Desktop\\DAYANA\\PERSONAL\\MÁSTER INGENIERÍA COMPUTACIONAL Y SISTEMAS INTELIGENTES\\TFM\\RESULTADOS\\Prueba.xlsx")
 ###########################################################################################################
 #EJECUTAMOS EL ALGORITMO GENÉTICO
 ###########################################################################################################

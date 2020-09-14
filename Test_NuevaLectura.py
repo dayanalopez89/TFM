@@ -27,13 +27,6 @@ def individual_creator(n):
     return individual
 
 
-
-################################################################################
-#FUNCIÓN DE MUTACIÓN
-def mutation(population):
-    mut=0
-    return mut
-
 ################################################################################
 #FUNCIÓN DE CROSSOVER
 def mate(ind1, ind2):
@@ -568,7 +561,6 @@ def check_feasibility(individual):
 
 ################################################################################
 #ALGORITMO GENÉTICO
-
 
 def main(filename):
 
