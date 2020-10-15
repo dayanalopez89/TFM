@@ -592,6 +592,7 @@ def main(filename):
 
     time_inicio_algoritmo = time()
     vector_resultados=[]
+    df_fitness=pd.DataFrame(columns=("Fitness original", "Fitness mutada"))
     if __name__ == "__main__":
         #Consideramos la función de fitness como FitnessMin y creamos los individuales como listas
         creator.create("FitnessMin", base.Fitness, weights=(-1.0,))
@@ -631,7 +632,9 @@ def main(filename):
         #toolbox.decorate("evaluate", tools.DeltaPenalty(check_feasibility, 20000))
         #toolbox.register("mate", tools.cxOnePoint)
         toolbox.register("mate", mate)
+        #Mutación
         toolbox.register("mutate", custom_mutation)
+        #toolbox.register("mutate", tools.mutFlipBit, indpb=0.05)
         toolbox.register("select", tools.selTournament, tournsize=3)
 
         # Creamos la población
@@ -655,6 +658,9 @@ def main(filename):
 
         # Se almacenan en fits los valores de fitness de los individuos
         fits = [ind.fitness.values[0] for ind in pop]
+
+        #Guardamos los fits antes de ser mutados los individuos
+        df_fitness["Fitness original"]=fits
 
         #fbest = np.ndarray((100, 1))
         # g=variable que cuenta el número de iteraciones realizadas
@@ -695,6 +701,9 @@ def main(filename):
             hof.update(pop)
             # Se evalúa la solución
             fits = [ind.fitness.values[0] for ind in pop]
+
+            #Guardamos los fits después de ser mutados
+            df_fitness["Fitness mutada"] = fits
 
             #Resultados fitness
             #length = len(pop)
@@ -794,6 +803,10 @@ def main(filename):
         df_t.to_excel(writer,
                       sheet_name="Tiempo ejecución", index=False)
         writer.save()
+
+        df_fitness.to_excel(writer,
+                      sheet_name="Fitness original vs mutada", index=False)
+        writer.save()
         #return hof, vector_resultados, time_final-time_inicio_algoritmo
 
 
@@ -859,9 +872,10 @@ dict_asignaturas, dict_horassemanales, dict_profes=lectura_datos_excel(file)
 #tam=len(dict_asignaturas[3, "Primer cuatrimestre", "ES"])+len(dict_asignaturas[3, "Primer cuatrimestre", "EU"])
 
 #Versión nueva lectura
-tam=len(dict_asignaturas[1, 1, "ES"])+len(dict_asignaturas[1, 1, "EU"])
+tam=len(dict_asignaturas[1, 1, "ES"])+len(dict_asignaturas[1, 1, "EU"]) +len(dict_asignaturas[2, 1, "ES"])+len(dict_asignaturas[2, 1, "EU"])+len(dict_asignaturas[2, 1, "IN"])+len(dict_asignaturas[3, 1, "ES"])+len(dict_asignaturas[3, 1, "EU"])
 #print("TAM: ", tam)
-
+#tam=len(dict_asignaturas[1, 1, "ES"])+len(dict_asignaturas[1, 1, "EU"])
+#+len(dict_asignaturas[3, 1, "ES"])+len(dict_asignaturas[3, 1, "EU"])
 #Versión antigua lectura
 # dict_ev={}
 # dict_ev[1, "Primer cuatrimestre", "ES"]=dict_asignaturas[1, "Primer cuatrimestre", "ES"]
@@ -876,6 +890,11 @@ tam=len(dict_asignaturas[1, 1, "ES"])+len(dict_asignaturas[1, 1, "EU"])
 dict_ev={}
 dict_ev[1, 1, "ES"]=dict_asignaturas[1, 1, "ES"]
 dict_ev[1, 1, "EU"]=dict_asignaturas[1, 1, "EU"]
+dict_ev[2, 1, "ES"]=dict_asignaturas[2, 1, "ES"]
+dict_ev[2, 1, "EU"]=dict_asignaturas[2, 1, "EU"]
+dict_ev[2, 1, "IN"]=dict_asignaturas[2, 1, "IN"]
+dict_ev[3, 1, "ES"]=dict_asignaturas[3, 1, "ES"]
+dict_ev[3, 1, "EU"]=dict_asignaturas[3, 1, "EU"]
 
 #Versión lectura antigua
 #print(dict_ev)
@@ -885,8 +904,9 @@ dict_ev[1, 1, "EU"]=dict_asignaturas[1, 1, "EU"]
  #dict_asignaturas[2, "Primer cuatrimestre", "ES"]+dict_asignaturas[2, "Primer cuatrimestre", "EU"]+dict_asignaturas[2, "Primer cuatrimestre", "EN"]
 
 #Versión nueva lectura
-asignaturas = dict_asignaturas[1, 1, "ES"]+dict_asignaturas[1, 1, "EU"]
-
+#asignaturas = dict_asignaturas[1, 1, "ES"]+dict_asignaturas[1, 1, "EU"]+dict_asignaturas[2, 1, "ES"]+dict_asignaturas[2, 1, "EU"]+dict_asignaturas[2, 1, "IN"]+dict_asignaturas[3, 1, "ES"]+dict_asignaturas[3, 1, "EU"]
+#asignaturas = dict_asignaturas[1, 1, "ES"]+dict_asignaturas[1, 1, "EU"]
+asignaturas = dict_asignaturas[1, 1, "ES"]+dict_asignaturas[1, 1, "EU"]+dict_asignaturas[2, 1, "ES"]+dict_asignaturas[2, 1, "EU"]+dict_asignaturas[2, 1, "IN"]+dict_asignaturas[3, 1, "ES"]+dict_asignaturas[3, 1, "EU"]
 
 #print(dict_ev)
 asignaturas.sort(key= lambda x: int(x.split("-")[2]))
@@ -981,17 +1001,17 @@ laboratorios_df=pd.read_excel(file, sheet_name="LAboratorios", header=0, index_c
 
 #time_inicio_algoritmo=0
 #time_final=0
-main("C:\\Users\\tr5568\\OneDrive - Axalta\\"\
-     "Desktop\\DAYANA\\PERSONAL\\MÁSTER INGENIERÍA COMPUTACIONAL Y SISTEMAS INTELIGENTES\\TFM\\RESULTADOS\\Prueba.xlsx")
+#main("C:\\Users\\tr5568\\OneDrive - Axalta\\"\
+     #"Desktop\\DAYANA\\PERSONAL\\MÁSTER INGENIERÍA COMPUTACIONAL Y SISTEMAS INTELIGENTES\\TFM\\RESULTADOS\\Resultados_Custom_11_Pop10_0.xlsx")
 ###########################################################################################################
 #EJECUTAMOS EL ALGORITMO GENÉTICO
 ###########################################################################################################
 #Ejecutamos el algoritmo genético 10 veces
-# i=8
-# while i<10:
-#     vector_resultados = []
-#     vector_restricciones = []
-#     #print(" ------ EJECUCIÓN NÚMERO ", i, "  ------")
-#     main("C:\\Users\\tr5568\\Desktop\\DAYANA\\PERSONAL\\" \
-#                        "MÁSTER INGENIERÍA COMPUTACIONAL Y SISTEMAS INTELIGENTES\\TFM\\RESULTADOS\\Resultados_11y21_Pop30_"+str(i)+".xlsx")
-#     i+=1
+i=0
+while i<3:
+     vector_resultados = []
+     vector_restricciones = []
+     #print(" ------ EJECUCIÓN NÚMERO ", i, "  ------")
+     main("C:\\Users\\tr5568\\OneDrive - Axalta\\Desktop\\DAYANA\\PERSONAL\\" \
+                        "MÁSTER INGENIERÍA COMPUTACIONAL Y SISTEMAS INTELIGENTES\\TFM\\RESULTADOS\\Resultados_Custom_11y21y31_Pop10_"+str(i)+".xlsx")
+     i+=1
